@@ -247,6 +247,41 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
   flex-shrink:0; background:none; border:none; color:var(--red); font-size:19px;
   padding:8px 6px; cursor:pointer; min-width:34px; min-height:34px;
 }
+.row-act{
+  flex-shrink:0; align-self:center; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:7px; color:var(--ink-dim);
+  font-size:11px; font-weight:600; font-family:var(--sans);
+  padding:7px 8px; margin-left:6px; cursor:pointer; white-space:nowrap;
+}
+.row-act:active{border-color:var(--amber); color:var(--amber);}
+.dot-act{color:var(--amber); border-color:rgba(242,179,61,.35);}
+.split-btn{
+  flex-shrink:0; background:var(--surface-2); border:1px solid var(--amber);
+  color:var(--amber); border-radius:8px; font-size:12px; font-weight:700;
+  font-family:var(--sans); height:34px; padding:0 9px; cursor:pointer;
+}
+.hint-line{
+  font-size:11.5px; color:var(--ink-dim); margin:-4px 0 12px; line-height:1.4;
+  font-family:var(--mono);
+}
+.hint-line.warn{color:var(--amber);}
+.note-btn{
+  flex-shrink:0; background:none; border:1px solid var(--line); border-radius:8px;
+  color:var(--ink-dim); font-size:15px; line-height:1; cursor:pointer;
+  min-width:34px; height:34px; padding:0 7px;
+}
+/* filled comments stay visibly marked — a note you can't see is a note you forget to read */
+.note-btn.has-note{border-color:var(--amber); color:var(--amber);}
+.comment-wrap{flex:1 1 100%; display:none; padding-top:2px;}
+.log-entry.show-comment .comment-wrap{display:block;}
+.comment-wrap textarea{
+  width:100%; box-sizing:border-box; resize:vertical; min-height:52px;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
+  color:var(--ink); padding:9px 10px; font-size:16px; line-height:1.35;
+  font-family:var(--sans);
+}
+.comment-wrap textarea::placeholder{color:var(--ink-dim);}
+.comment-wrap textarea:focus{outline:none; border-color:var(--amber);}
 .log-footer{
   display:flex; gap:8px; padding:16px 14px calc(24px + env(safe-area-inset-bottom));
 }
@@ -255,6 +290,10 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
   cursor:pointer; font-family:var(--sans);
 }
 .btn-export{background:var(--amber); color:var(--amber-ink);}
+.btn-csv{
+  background:var(--surface-2); color:var(--ink-dim); border:1px solid var(--line);
+  flex:0 0 auto; padding-left:16px; padding-right:16px;
+}
 .btn-clear{background:var(--surface-2); color:var(--red); border:1px solid var(--line) !important;}
 .log-empty{padding:60px 14px; text-align:center; color:var(--ink-dim); font-size:13px; line-height:1.6;}
 .log-empty .big{font-size:28px; display:block; margin-bottom:10px;}
@@ -358,7 +397,8 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
   <div class="log-screen-body" id="logEntries"></div>
   <div class="log-footer">
     <button class="btn-clear" id="clearLogBtn">Clear log</button>
-    <button class="btn-export" id="exportBtn">Export CSV</button>
+    <button class="btn-csv" id="exportCsvBtn">CSV</button>
+    <button class="btn-export" id="exportBtn">Export Excel</button>
   </div>
 </div>
 
@@ -379,9 +419,13 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 <div class="modal-backdrop" id="libModalBackdrop">
   <div class="modal">
     <h2 id="libModalTitle">Edit library item</h2>
-    <div class="field"><label>Brand</label><input id="lBrand" type="text"></div>
-    <div class="field"><label>Model</label><input id="lModel" type="text" placeholder="Leave blank if none"></div>
-    <div class="field"><label>Size</label><input id="lSize" type="text"></div>
+    <div class="field"><label>Brand</label><input id="lBrand" type="text" list="brandList"></div>
+    <datalist id="brandList"></datalist>
+    <div class="field"><label>Model</label><input id="lModel" type="text" list="modelList" placeholder="Leave blank if none"></div>
+    <datalist id="modelList"></datalist>
+    <div class="field"><label>Size</label><input id="lSize" type="text" list="sizeList"></div>
+    <datalist id="sizeList"></datalist>
+    <div class="hint-line" id="lSimilarHint"></div>
     <div class="field"><label>Category</label><input id="lCategory" type="text" list="categoryList" placeholder="e.g. Commercial Tire"></div>
     <datalist id="categoryList"></datalist>
     <div class="field"><label>Notes</label><input id="lNotes" type="text" placeholder="Optional"></div>
@@ -396,9 +440,9 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 <div class="modal-backdrop" id="customModalBackdrop">
   <div class="modal">
     <h2>Add manual entry</h2>
-    <div class="field"><label>Brand</label><input id="cBrand" type="text"></div>
-    <div class="field"><label>Model</label><input id="cModel" type="text"></div>
-    <div class="field"><label>Size</label><input id="cSize" type="text"></div>
+    <div class="field"><label>Brand</label><input id="cBrand" type="text" list="brandList"></div>
+    <div class="field"><label>Model</label><input id="cModel" type="text" list="modelList"></div>
+    <div class="field"><label>Size</label><input id="cSize" type="text" list="sizeList"></div>
     <div class="field"><label>DOT</label><input id="cDot" type="text" placeholder="Optional"></div>
     <div class="field"><label>Notes</label><input id="cNotes" type="text" placeholder="Optional"></div>
     <div class="modal-actions">
@@ -459,7 +503,7 @@ function knownCategories(){
 }
 
 // ---------- state ----------
-let sessionLog = []; // {id, brand, model, size, cat, notes, qty, dot}
+let sessionLog = []; // {id, brand, model, size, cat, notes, qty, dot, comment}
 let logIdSeq = 1;
 
 const $ = (id) => document.getElementById(id);
@@ -593,7 +637,7 @@ function runSearch(){
   const top = scored.slice(0, 40);
 
   if(top.length === 0){
-    resultsEl.innerHTML = `<div class="empty-state"><span class="big">—</span>No matches for "${q}".<br>Try the model number or size, or add it manually below.</div>`;
+    resultsEl.innerHTML = `<div class="empty-state"><span class="big">—</span>No matches for "${escapeHtml(q)}".<br>Try the model number or size — or add it to the library below.</div>`;
     searchHint.textContent = '0 matches';
     return;
   }
@@ -609,6 +653,8 @@ function runSearch(){
         <div class="result-sub">${sub}</div>
       </div>
       <div class="result-cat">${item.c.replace(' Tire','').replace(' Rim',' Rim')}</div>
+      <button class="row-act dot-act" data-act="adddot" data-idx="${item._idx}" title="Log as its own line with a DOT">+DOT</button>
+      <button class="row-act sim-act" data-act="similar" data-idx="${item._idx}" title="Add a similar tire to the library">+&#8202;similar</button>
     </div>`;
   }).join('');
 }
@@ -618,15 +664,43 @@ clearBtn.addEventListener('click', ()=>{ searchInput.value=''; runSearch(); sear
 runSearch();
 
 resultsEl.addEventListener('click', (e)=>{
+  const act = e.target.closest('button[data-act]');
   const row = e.target.closest('.result-row');
-  if(!row) return;
-  const item = EFFECTIVE_LIBRARY[parseInt(row.dataset.idx,10)];
+  if(!row && !act) return;
+  const idx = parseInt((act || row).dataset.idx, 10);
+  const item = EFFECTIVE_LIBRARY[idx];
   if(!item) return;
-  addToLog({
+
+  const entry = {
     brand: item.b, model: item.m === '-' ? '' : item.m, size: item.s,
     cat: item.c, notes: item.n === '-' ? '' : item.n
-  });
+  };
+
+  if(act && act.dataset.act === 'similar'){
+    // same brand and model, different size — prefill everything and land on Size
+    openLibModal(item, { similar:true });
+    return;
+  }
+  if(act && act.dataset.act === 'adddot'){
+    // its own line, never rolled up, DOT box open and focused
+    const id = addToLog(entry, { forceNew:true });
+    switchView('log');
+    focusDot(id);
+    return;
+  }
+  addToLog(entry);
 });
+
+// jump to a log row's DOT box and put the cursor in it
+function focusDot(id){
+  setTimeout(()=>{
+    const input = logEntries.querySelector(`input[data-role="dot"][data-id="${id}"]`);
+    if(input){
+      if(input.scrollIntoView) input.scrollIntoView({ block:'center' });
+      input.focus();
+    }
+  }, 60);
+}
 
 // ---------- library tab: browse / edit / add / delete catalog items ----------
 function libRunSearch(){
@@ -668,20 +742,91 @@ const libModalBackdrop = $('libModalBackdrop');
 const libModalTitle = $('libModalTitle');
 const categoryList = $('categoryList');
 let libEditTarget = null; // effective-library item being edited, or null when adding new
+let libSimilarMode = false;
 
-function openLibModal(item){
-  libEditTarget = item || null;
-  libModalTitle.textContent = item ? 'Edit library item' : 'Add new library item';
+function openLibModal(item, opts){
+  const similar = !!(opts && opts.similar);
+  // in similar mode the source item is a template, not the thing being edited
+  libEditTarget = similar ? null : (item || null);
+  libSimilarMode = similar;
+  libModalTitle.textContent = similar ? 'Add similar tire' : (item ? 'Edit library item' : 'Add new library item');
   $('lBrand').value = item ? item.b : '';
   $('lModel').value = item && item.m !== '-' ? item.m : '';
   $('lSize').value = item ? item.s : '';
   $('lCategory').value = item ? item.c : '';
   $('lNotes').value = item && item.n !== '-' ? item.n : '';
-  $('lDelete').style.display = item ? 'block' : 'none';
+  $('lDelete').style.display = (item && !similar) ? 'block' : 'none';
+  $('lSave').textContent = similar ? 'Save & log it' : 'Save';
   categoryList.innerHTML = knownCategories().map(c=>`<option value="${c}">`).join('');
+
+  // brand, model, category and spec carry over; size is the field that differs
+  if(similar) $('lSize').value = '';
+  refreshSuggestions($('lBrand').value, $('lModel').value);
+  updateSimilarHint();
+
   libModalBackdrop.classList.add('show');
-  setTimeout(()=> $('lBrand').focus(), 50);
+  setTimeout(()=> (similar ? $('lSize') : $('lBrand')).focus(), 50);
 }
+
+// ---------- autocomplete ----------
+// Suggestions narrow as you go: models are filtered to the brand you typed, sizes to the
+// brand and model. That's what makes "same tire, different size" a three-tap job — pick
+// the brand, pick the model, type the one field that actually differs.
+function uniqSorted(values){
+  return [...new Set(values.filter(v => v && v !== '-'))].sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
+}
+
+function fillDatalist(el, values){
+  el.innerHTML = values.slice(0, 400).map(v=>`<option value="${escapeHtml(v)}">`).join('');
+}
+
+function refreshSuggestions(brandVal, modelVal){
+  const b = (brandVal || '').trim().toLowerCase();
+  const m = (modelVal || '').trim().toLowerCase();
+
+  fillDatalist($('brandList'), uniqSorted(EFFECTIVE_LIBRARY.map(i=>i.b)));
+
+  const byBrand = b ? EFFECTIVE_LIBRARY.filter(i => i.b.toLowerCase() === b) : EFFECTIVE_LIBRARY;
+  const modelPool = byBrand.length ? byBrand : EFFECTIVE_LIBRARY;
+  fillDatalist($('modelList'), uniqSorted(modelPool.map(i=>i.m)));
+
+  const byModel = m ? modelPool.filter(i => i.m.toLowerCase() === m) : modelPool;
+  const sizePool = byModel.length ? byModel : modelPool;
+  fillDatalist($('sizeList'), uniqSorted(sizePool.map(i=>i.s)));
+}
+
+// live count of what's already on file for this brand+model, so a duplicate is obvious
+function updateSimilarHint(){
+  const b = $('lBrand').value.trim().toLowerCase();
+  const m = $('lModel').value.trim().toLowerCase();
+  const s = $('lSize').value.trim().toLowerCase();
+  const hint = $('lSimilarHint');
+  if(!b){ hint.textContent = ''; return; }
+
+  const fam = EFFECTIVE_LIBRARY.filter(i => i.b.toLowerCase()===b && (!m || i.m.toLowerCase()===m));
+  const dupe = s && fam.some(i => i.s.toLowerCase()===s);
+  if(dupe){
+    hint.textContent = 'Already in the library — saving will add a second copy.';
+    hint.className = 'hint-line warn';
+  } else if(fam.length){
+    hint.textContent = fam.length + ' existing size' + (fam.length===1?'':'s') + ': ' +
+      fam.slice(0,6).map(i=>i.s).join(', ') + (fam.length>6 ? '…' : '');
+    hint.className = 'hint-line';
+  } else {
+    hint.textContent = 'New to the library.';
+    hint.className = 'hint-line';
+  }
+}
+
+['lBrand','lModel','lSize'].forEach(id=>{
+  $(id).addEventListener('input', ()=>{
+    refreshSuggestions($('lBrand').value, $('lModel').value);
+    updateSimilarHint();
+  });
+});
+['cBrand','cModel'].forEach(id=>{
+  $(id).addEventListener('input', ()=> refreshSuggestions($('cBrand').value, $('cModel').value));
+});
 
 $('libAddBtn').addEventListener('click', ()=> openLibModal(null));
 libResults.addEventListener('click', (e)=>{
@@ -715,7 +860,17 @@ $('lSave').addEventListener('click', ()=>{
   libModalBackdrop.classList.remove('show');
   libRunSearch();
   runSearch();
-  showToast('Library updated');
+
+  if(libSimilarMode){
+    // saved from the Count tab mid-count — log it straight away rather than
+    // making someone search for the thing they just typed in
+    libSimilarMode = false;
+    addToLog({ brand: patch.b, model: patch.m === '-' ? '' : patch.m, size: patch.s,
+               cat: patch.c, notes: patch.n === '-' ? '' : patch.n });
+    showToast('Saved to library and logged');
+  } else {
+    showToast('Library updated');
+  }
 });
 
 $('lDelete').addEventListener('click', ()=>{
@@ -736,17 +891,45 @@ $('lDelete').addEventListener('click', ()=>{
 });
 
 // ---------- session log ----------
-function addToLog(entry){
+function addToLog(entry, opts){
   // DOT is typically unique per tire, so don't fold new adds into an existing row —
-  // only bump qty for exact repeat taps where DOT is still blank on both.
-  const existing = sessionLog.find(e => e.brand===entry.brand && e.model===entry.model && e.size===entry.size && e.notes===entry.notes && !e.dot && !entry.dot);
+  // only bump qty for exact repeat taps where DOT is still blank on both. opts.forceNew
+  // skips the roll-up entirely, which is how "+DOT" gives every tire its own line.
+  const existing = (opts && opts.forceNew) ? null : sessionLog.find(e =>
+    e.brand===entry.brand && e.model===entry.model && e.size===entry.size &&
+    e.notes===entry.notes && !e.dot && !entry.dot);
+  let id;
   if(existing){
     existing.qty += 1;
+    id = existing.id;
   } else {
-    sessionLog.unshift({ id: logIdSeq++, qty: 1, ...entry, dot: entry.dot || '' });
+    id = logIdSeq++;
+    sessionLog.unshift({ id, qty: 1, ...entry, dot: entry.dot || '', comment: entry.comment || '' });
   }
   renderLog();
   showToast((existing ? existing.qty+'×  ' : '+1  ') + entry.brand + ' ' + entry.size);
+  return id;
+}
+
+// Split a rolled-up line into one row per tire, so each can carry its own DOT.
+function splitEntry(id){
+  const idx = sessionLog.findIndex(x=>x.id===id);
+  if(idx < 0) return;
+  const e = sessionLog[idx];
+  if(e.qty < 2) return;
+  if(e.qty > 12 && !confirm(`Split this into ${e.qty} separate lines, one per tire?`)) return;
+
+  const copies = [];
+  for(let i=0;i<e.qty;i++){
+    // the original keeps its DOT and comment; the rest start clean
+    copies.push(i === 0
+      ? { ...e, qty:1 }
+      : { ...e, id: logIdSeq++, qty:1, dot:'', comment:'' });
+  }
+  sessionLog.splice(idx, 1, ...copies);
+  renderLog();
+  showToast('Split into ' + copies.length + ' lines — add a DOT to each');
+  focusDot(copies[0].id);
 }
 
 function changeQty(id, delta){
@@ -777,7 +960,7 @@ function renderLog(){
   }
 
   logEntries.innerHTML = sessionLog.map(e => `
-    <div class="log-entry">
+    <div class="log-entry${e.comment ? ' show-comment' : ''}">
       <div class="info">
         <div class="title">${e.brand}${e.model ? ' '+e.model : ''}</div>
         <div class="sub">${e.size}${e.notes ? ' · '+e.notes : ''}</div>
@@ -791,7 +974,12 @@ function renderLog(){
           <span class="qty">${e.qty}</span>
           <button data-act="inc" data-id="${e.id}">+</button>
         </div>
+        ${e.qty > 1 ? `<button class="split-btn" data-act="split" data-id="${e.id}" title="One line per tire, so each gets its own DOT">⑂ ${e.qty}</button>` : ''}
+        <button class="note-btn${e.comment ? ' has-note' : ''}" data-act="note" data-id="${e.id}" aria-label="Add a comment">✎</button>
         <button class="del-btn" data-act="del" data-id="${e.id}">🗑</button>
+      </div>
+      <div class="comment-wrap">
+        <textarea data-id="${e.id}" data-role="comment" rows="2" placeholder="Damage, mismatch, DOT unreadable, wrong size on sidewall…">${escapeHtml(e.comment || '')}</textarea>
       </div>
     </div>
   `).join('');
@@ -804,17 +992,53 @@ logEntries.addEventListener('click', (e)=>{
   if(btn.dataset.act==='inc') changeQty(id, 1);
   if(btn.dataset.act==='dec') changeQty(id, -1);
   if(btn.dataset.act==='del') removeEntry(id);
+  if(btn.dataset.act==='split') splitEntry(id);
+  if(btn.dataset.act==='note'){
+    // Toggle in place rather than re-rendering — a full redraw would steal focus
+    // from whatever else is open and scroll the list out from under a gloved thumb.
+    const row = btn.closest('.log-entry');
+    row.classList.toggle('show-comment');
+    if(row.classList.contains('show-comment')){
+      const ta = row.querySelector('textarea[data-role="comment"]');
+      if(ta) ta.focus();
+    }
+  }
 });
 
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
 let dotSaveTimer;
+let dotHintShown = false;
 logEntries.addEventListener('input', (e)=>{
   const input = e.target.closest('input[data-role="dot"]');
-  if(!input) return;
-  const id = parseInt(input.dataset.id,10);
-  const entry = sessionLog.find(x=>x.id===id);
-  if(entry) entry.dot = input.value;
-  clearTimeout(dotSaveTimer);
-  dotSaveTimer = setTimeout(saveState, 400);
+  if(input){
+    const id = parseInt(input.dataset.id,10);
+    const entry = sessionLog.find(x=>x.id===id);
+    if(entry) entry.dot = input.value;
+    if(entry && entry.qty > 1 && !dotHintShown){
+      dotHintShown = true;
+      showToast('That DOT covers all ' + entry.qty + ' — tap ⑂ to split them apart');
+    }
+    clearTimeout(dotSaveTimer);
+    dotSaveTimer = setTimeout(saveState, 400);
+    return;
+  }
+  const ta = e.target.closest('textarea[data-role="comment"]');
+  if(ta){
+    const id = parseInt(ta.dataset.id,10);
+    const entry = sessionLog.find(x=>x.id===id);
+    if(entry) entry.comment = ta.value;
+    // keep the amber marker in sync without redrawing the row
+    const row = ta.closest('.log-entry');
+    const mark = row && row.querySelector('.note-btn');
+    if(mark) mark.classList.toggle('has-note', !!ta.value.trim());
+    clearTimeout(dotSaveTimer);
+    dotSaveTimer = setTimeout(saveState, 400);
+  }
 });
 
 $('clearLogBtn').addEventListener('click', ()=>{
@@ -823,33 +1047,287 @@ $('clearLogBtn').addEventListener('click', ()=>{
   renderLog();
 });
 
-// ---------- export ----------
-function csvEscape(v){
-  v = String(v ?? '');
-  if(/[",\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
-  return v;
+// ---------- Excel export ----------
+// An .xlsx is a zip of XML parts. There's no library to load here — the app has to keep
+// working in a container with no signal — so this writes both the zip and the sheet by
+// hand. Store-only (no deflate) keeps it to about 60 lines; a count sheet is small enough
+// that compression buys nothing worth the code.
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for(let i=0;i<256;i++){
+    let c = i;
+    for(let k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
 }
+
+function zipStore(files){
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+
+  const u16 = n => [n & 0xFF, (n >>> 8) & 0xFF];
+  const u32 = n => [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF];
+
+  files.forEach(f => {
+    const name = enc.encode(f.name);
+    const data = enc.encode(f.data);
+    const crc = crc32(data);
+    // fixed DOS timestamp — Excel doesn't care and it keeps output deterministic
+    const time = 0, date = 0x2100;
+
+    const local = [
+      ...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0),
+      ...u16(time), ...u16(date), ...u32(crc),
+      ...u32(data.length), ...u32(data.length),
+      ...u16(name.length), ...u16(0)
+    ];
+    parts.push(new Uint8Array(local), name, data);
+
+    central.push([
+      ...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0),
+      ...u16(time), ...u16(date), ...u32(crc),
+      ...u32(data.length), ...u32(data.length),
+      ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(0), ...u32(offset)
+    ]);
+    central.push(name);
+    offset += local.length + name.length + data.length;
+  });
+
+  const cdParts = [];
+  let cdLen = 0;
+  for(let i=0;i<central.length;i+=2){
+    const head = new Uint8Array(central[i]);
+    cdParts.push(head, central[i+1]);
+    cdLen += head.length + central[i+1].length;
+  }
+  const end = new Uint8Array([
+    ...u32(0x06054b50), ...u16(0), ...u16(0),
+    ...u16(files.length), ...u16(files.length),
+    ...u32(cdLen), ...u32(offset), ...u16(0)
+  ]);
+
+  const all = [...parts, ...cdParts, end];
+  const total = all.reduce((a,p)=>a+p.length,0);
+  const out = new Uint8Array(total);
+  let p = 0;
+  all.forEach(chunk => { out.set(chunk, p); p += chunk.length; });
+  return out;
+}
+
+function xmlEsc(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]
+  ));
+}
+
+function colName(n){
+  let s = '';
+  while(n > 0){ const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+// cell: {v, s, num} — num renders as a number, everything else as inline text
+function cellXml(col, row, cell){
+  const ref = colName(col) + row;
+  const style = cell.s ? ` s="${cell.s}"` : '';
+  if(cell.v === '' || cell.v == null) return `<c r="${ref}"${style}/>`;
+  if(cell.num) return `<c r="${ref}"${style}><v>${cell.v}</v></c>`;
+  return `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(cell.v)}</t></is></c>`;
+}
+
+function buildXlsx(sheetRows, cols, meta){
+  const rowsXml = sheetRows.map((r, i) => {
+    const n = i + 1;
+    const cells = r.cells.map((c, j) => cellXml(j + 1, n, c)).join('');
+    const h = r.h ? ` ht="${r.h}" customHeight="1"` : '';
+    return `<row r="${n}"${h}>${cells}</row>`;
+  }).join('');
+
+  const colsXml = cols.map((w, i) =>
+    `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`
+  ).join('');
+
+  const merges = meta.merges.length
+    ? `<mergeCells count="${meta.merges.length}">${meta.merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>`
+    : '';
+
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<sheetViews><sheetView showGridLines="0" tabSelected="1" workbookViewId="0">
+<pane ySplit="${meta.headerRow}" topLeftCell="A${meta.headerRow+1}" activePane="bottomLeft" state="frozen"/>
+</sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+${merges}
+<autoFilter ref="A${meta.headerRow}:${colName(cols.length)}${meta.lastDataRow}"/>
+<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
+<pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/>
+</worksheet>`;
+
+  // 0 default · 1 title · 2 meta label · 3 meta value · 4 header · 5 body wrap · 6 body centred · 7 total
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="6">
+<font><sz val="11"/><name val="Calibri"/></font>
+<font><b/><sz val="16"/><color rgb="FF17181A"/><name val="Calibri"/></font>
+<font><b/><sz val="10"/><color rgb="FF6B6E73"/><name val="Calibri"/></font>
+<font><sz val="11"/><color rgb="FF17181A"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FF17181A"/><name val="Calibri"/></font>
+</fonts>
+<fills count="4">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF17181A"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF7E4BC"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="3">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFD8D8D8"/></left><right style="thin"><color rgb="FFD8D8D8"/></right><top style="thin"><color rgb="FFD8D8D8"/></top><bottom style="thin"><color rgb="FFD8D8D8"/></bottom><diagonal/></border>
+<border><left/><right/><top style="medium"><color rgb="FF17181A"/></top><bottom/><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="8">
+<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"><alignment vertical="center"/></xf>
+<xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/>
+<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1"/>
+<xf xfId="0" numFmtId="0" fontId="4" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
+<xf xfId="0" numFmtId="0" fontId="5" fillId="3" borderId="2" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+<dxfs count="0"/>
+</styleSheet>`;
+
+  return zipStore([
+    { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>` },
+    { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>` },
+    { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Container Count" sheetId="1" r:id="rId1"/></sheets>
+</workbook>` },
+    { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>` },
+    { name: 'xl/styles.xml', data: styles },
+    { name: 'xl/worksheets/sheet1.xml', data: sheet },
+  ]);
+}
+
+function downloadBlob(blob, fname){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportRows(){
+  const container = $('containerInput').value.trim();
+  const date = $('dateInput').value;
+  const counter = $('counterInput').value.trim();
+  return sessionLog.slice().reverse().map(e => [
+    container, date, counter, e.brand, e.model === '-' ? '' : e.model,
+    e.size, e.dot || '', e.cat, e.notes || '', e.comment || '', e.qty
+  ]);
+}
+
+const EXPORT_HEADER = ['Container','Date','Counted By','Brand','Model','Size','DOT','Category','Spec','Comments','Qty'];
+const EXPORT_WIDTHS = [15, 12, 15, 18, 22, 18, 16, 17, 14, 46, 7];
 
 $('exportBtn').addEventListener('click', ()=>{
   if(sessionLog.length === 0){ showToast('Log is empty'); return; }
   const container = $('containerInput').value.trim();
   const date = $('dateInput').value;
   const counter = $('counterInput').value.trim();
+  const data = exportRows();
+  const totalQty = sessionLog.reduce((a,e)=>a+e.qty,0);
+  const lastCol = colName(EXPORT_HEADER.length);
 
-  const header = ['Container','Date','Counted By','Brand','Model','Size','DOT','Category','Notes','Qty'];
-  const rows = [header];
-  sessionLog.slice().reverse().forEach(e=>{
-    rows.push([container, date, counter, e.brand, e.model, e.size, e.dot || '', e.cat, e.notes, e.qty]);
+  const rows = [];
+  rows.push({ h: 26, cells: [{v:'LSL DISTRIBUTORS — CONTAINER TIRE COUNT', s:1}] });
+  rows.push({ cells: [
+    {v:'Container', s:2}, {v:container || '—', s:3}, {v:'Date', s:2}, {v:date, s:3},
+    {v:'Counted by', s:2}, {v:counter || '—', s:3}
+  ]});
+  rows.push({ cells: [
+    {v:'Total tires', s:2}, {v:totalQty, s:3, num:true}, {v:'Line items', s:2},
+    {v:sessionLog.length, s:3, num:true}, {v:'Exported', s:2},
+    {v:new Date().toLocaleString(), s:3}
+  ]});
+  rows.push({ cells: [] });
+  rows.push({ h: 30, cells: EXPORT_HEADER.map(h => ({v:h, s:4})) });
+
+  const headerRow = rows.length;
+  data.forEach(r => {
+    // give a row extra height when the comment will wrap, so nothing hides behind a cell edge
+    const comment = String(r[9] || '');
+    const lines = Math.min(4, Math.ceil(comment.length / 46) || 1);
+    rows.push({
+      h: lines > 1 ? 15 * lines : 0,
+      cells: r.map((v, i) => i === 10 ? {v, s:6, num:true} : {v, s:5})
+    });
   });
-  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const fname = 'LSL_Count_' + (container || 'session') + '_' + date + '.csv';
-  a.href = url; a.download = fname;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const lastDataRow = rows.length;
+
+  rows.push({ h: 22, cells: [
+    {v:'TOTAL', s:7}, {v:'', s:7}, {v:'', s:7}, {v:'', s:7}, {v:'', s:7}, {v:'', s:7},
+    {v:'', s:7}, {v:'', s:7}, {v:'', s:7}, {v:sessionLog.length + ' line items', s:7},
+    {v:totalQty, s:7, num:true}
+  ]});
+
+  const bytes = buildXlsx(rows, EXPORT_WIDTHS, {
+    headerRow, lastDataRow,
+    merges: ['A1:' + lastCol + '1']
+  });
+
+  const fname = 'LSL_Count_' + (container || 'session') + '_' + date + '.xlsx';
+  downloadBlob(new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), fname);
   showToast('Exported ' + fname);
+});
+
+function csvEscape(v){
+  v = String(v ?? '');
+  if(/[",\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+
+$('exportCsvBtn').addEventListener('click', ()=>{
+  if(sessionLog.length === 0){ showToast('Log is empty'); return; }
+  const container = $('containerInput').value.trim();
+  const date = $('dateInput').value;
+  const rows = [EXPORT_HEADER, ...exportRows()];
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  // BOM so Excel opens accented brand names correctly instead of mojibake
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  downloadBlob(blob, 'LSL_Count_' + (container || 'session') + '_' + date + '.csv');
+  showToast('CSV exported');
 });
 
 // ---------- full backup / restore (session log + library overrides, as one portable file) ----------
