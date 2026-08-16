@@ -118,6 +118,15 @@ header{
 .session-grid{
   display:grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap:8px;
 }
+.session-grid .field-wide{grid-column:1 / -1;}
+.loc-ctrl{flex:1 1 120px; min-width:90px;}
+.loc-ctrl input{
+  width:100%; box-sizing:border-box; background:var(--surface-2);
+  border:1px solid var(--line); color:var(--ink); border-radius:7px;
+  padding:8px; font-size:16px; font-family:var(--mono);
+}
+.loc-ctrl input::placeholder{color:var(--ink-dim);}
+.loc-ctrl input:focus{outline:none; border-color:var(--amber);}
 .field label{
   display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em;
   color:var(--ink-dim); margin-bottom:4px; font-weight:600;
@@ -360,6 +369,10 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
       <label for="counterInput">Counted by</label>
       <input id="counterInput" type="text" placeholder="Initials" autocomplete="off">
     </div>
+    <div class="field field-wide">
+      <label for="locationInput">Location — applied to new entries</label>
+      <input id="locationInput" type="text" placeholder="e.g. Bay 2, back stack, row 3" autocomplete="off">
+    </div>
   </div>
   <div class="view-tabs">
     <button class="view-tab active" id="tabCount" data-view="count">Count</button>
@@ -510,7 +523,7 @@ function knownCategories(){
 }
 
 // ---------- state ----------
-let sessionLog = []; // {id, brand, model, size, cat, notes, qty, dot, comment}
+let sessionLog = []; // {id, brand, model, size, cat, notes, qty, dot, comment, location}
 let logIdSeq = 1;
 
 const $ = (id) => document.getElementById(id);
@@ -530,6 +543,7 @@ const toast = $('toast');
 const containerInput = $('containerInput');
 const dateInput = $('dateInput');
 const counterInput = $('counterInput');
+const locationInput = $('locationInput');
 const saveIndicator = $('saveIndicator');
 const libraryView = $('libraryView');
 const tabLibrary = $('tabLibrary');
@@ -549,6 +563,7 @@ function saveState(){
       container: containerInput.value,
       date: dateInput.value,
       counter: counterInput.value,
+      location: locationInput.value,
       savedAt: Date.now()
     }));
     flashSaveIndicator();
@@ -578,6 +593,7 @@ function loadState(){
       if(data.container) containerInput.value = data.container;
       if(data.date) dateInput.value = data.date;
       if(data.counter) counterInput.value = data.counter;
+      if(data.location) locationInput.value = data.location;
       showToast('Restored last session — ' + sessionLog.reduce((a,e)=>a+e.qty,0) + ' tires');
     }
   }catch(err){ /* corrupted save, ignore and start fresh */ }
@@ -589,7 +605,7 @@ loadState();
 loadLibOverrides();
 buildEffectiveLibrary();
 
-[containerInput, dateInput, counterInput].forEach(inp => inp.addEventListener('input', saveState));
+[containerInput, dateInput, counterInput, locationInput].forEach(inp => inp.addEventListener('input', saveState));
 
 // ---------- view switching ----------
 function switchView(view){
@@ -612,17 +628,71 @@ function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
 function highlight(text, q){
   if(!q) return text;
-  const re = new RegExp('('+escRe(q)+')','ig');
+  const toks = tokenize(q).filter(t => t.length > 0).sort((a,b)=> b.length-a.length);
+  if(!toks.length) return text;
+  const re = new RegExp('(' + toks.map(escRe).join('|') + ')', 'ig');
   return text.replace(re, '<mark>$1</mark>');
 }
 
-function scoreItem(item, q){
-  const hay = (item.b+' '+item.m+' '+item.s).toLowerCase();
+// Strip everything but letters and digits. Sizes get written a dozen ways —
+// 195/60R16, 195 60 16, 19560r16 — and nobody types the slash on a phone with gloves on.
+function squash(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+
+function tokenize(q){
+  // split on separators too, so 195-60-16 and 195/60R16 behave like 195 60 16
+  return q.toLowerCase().split(/[\s,\/\-]+/).filter(Boolean);
+}
+
+// Score one token against one item. Lower is better; null means no match at all.
+function scoreToken(item, tok, cache){
+  const t = tok.toLowerCase();
+  const ts = squash(t);
+  if(!ts) return null;
+
+  if(cache.b.startsWith(t) || cache.m.startsWith(t) || cache.s.startsWith(t)) return 0;
+  if(cache.hay.includes(' ' + t)) return 1;          // starts a word
+  if(cache.hay.includes(t)) return 2;                // anywhere, as typed
+  if(cache.bs.startsWith(ts) || cache.ms.startsWith(ts) || cache.ss.startsWith(ts)) return 2;
+  if(cache.hays.includes(ts)) return 3;              // matches once punctuation is ignored
+  return null;
+}
+
+function itemCache(item){
   const b = item.b.toLowerCase(), m = item.m.toLowerCase(), s = item.s.toLowerCase();
-  if(b.startsWith(q) || s.startsWith(q) || m.startsWith(q)) return 0;
-  if(hay.includes(' '+q)) return 1;
-  if(hay.includes(q)) return 2;
-  return -1;
+  return {
+    b, m, s,
+    bs: squash(b), ms: squash(m), ss: squash(s),
+    hay: (item.b+' '+item.m+' '+item.s).toLowerCase(),
+    hays: squash(item.b+item.m+item.s)
+  };
+}
+
+// Every token has to land somewhere — but each is matched independently, so
+// "winda wh 195 16" finds the tire without the words being adjacent or complete.
+function scoreItem(item, q, tokens){
+  const toks = tokens || tokenize(q);
+  if(!toks.length) return -1;
+  const cache = itemCache(item);
+  let total = 0;
+  for(const t of toks){
+    const sc = scoreToken(item, t, cache);
+    if(sc === null) return -1;
+    total += sc;
+  }
+  return total / toks.length;
+}
+
+// Fallback when nothing matches everything: rank by how many tokens did match, so a
+// near-miss still surfaces something to look at instead of an empty screen.
+function scoreLoose(item, tokens){
+  const cache = itemCache(item);
+  let hits = 0, total = 0;
+  for(const t of tokens){
+    const sc = scoreToken(item, t, cache);
+    if(sc !== null){ hits++; total += sc; }
+  }
+  if(!hits) return null;
+  return { hits, score: total / hits };
 }
 
 function runSearch(){
@@ -635,12 +705,27 @@ function runSearch(){
     return;
   }
 
-  const scored = [];
+  const tokens = tokenize(q);
+  let scored = [];
   for(const item of EFFECTIVE_LIBRARY){
-    const sc = scoreItem(item, q);
+    const sc = scoreItem(item, q, tokens);
     if(sc >= 0) scored.push([sc, item]);
   }
   scored.sort((a,b)=> a[0]-b[0]);
+
+  let loose = false;
+  if(scored.length === 0 && tokens.length > 1){
+    // nothing matched every word — fall back to whatever matched the most of them
+    const partial = [];
+    for(const item of EFFECTIVE_LIBRARY){
+      const r = scoreLoose(item, tokens);
+      if(r) partial.push([r, item]);
+    }
+    partial.sort((a,b)=> (b[0].hits - a[0].hits) || (a[0].score - b[0].score));
+    scored = partial.map(([r,item]) => [r.score, item]);
+    loose = scored.length > 0;
+  }
+
   const top = scored.slice(0, 40);
 
   if(top.length === 0){
@@ -649,7 +734,9 @@ function runSearch(){
     return;
   }
 
-  searchHint.textContent = scored.length + ' match' + (scored.length===1?'':'es') + (scored.length>40 ? ' — showing top 40' : '');
+  searchHint.textContent = loose
+    ? 'No exact match — ' + scored.length + ' close' + (scored.length>40 ? ', showing top 40' : '')
+    : scored.length + ' match' + (scored.length===1?'':'es') + (scored.length>40 ? ' — showing top 40' : '');
 
   resultsEl.innerHTML = top.map(([sc,item]) => {
     const title = highlight(item.b + (item.m && item.m !== '-' ? ' ' + item.m : ''), q);
@@ -714,8 +801,9 @@ function libRunSearch(){
   const q = libSearchInput.value.trim().toLowerCase();
   libClearBtn.style.display = q ? 'block' : 'none';
 
-  const pool = q ? EFFECTIVE_LIBRARY.filter(item => scoreItem(item, q) >= 0) : EFFECTIVE_LIBRARY;
-  const list = q ? pool.slice().sort((a,b)=> scoreItem(a,q)-scoreItem(b,q)) : pool;
+  const libTokens = tokenize(q);
+  const pool = q ? EFFECTIVE_LIBRARY.filter(item => scoreItem(item, q, libTokens) >= 0) : EFFECTIVE_LIBRARY;
+  const list = q ? pool.slice().sort((a,b)=> scoreItem(a,q,libTokens)-scoreItem(b,q,libTokens)) : pool;
   const top = list.slice(0, 60);
 
   libSearchHint.textContent = q
@@ -902,16 +990,18 @@ function addToLog(entry, opts){
   // DOT is typically unique per tire, so don't fold new adds into an existing row —
   // only bump qty for exact repeat taps where DOT is still blank on both. opts.forceNew
   // skips the roll-up entirely, which is how "+DOT" gives every tire its own line.
+  const loc = entry.location != null ? entry.location : (locationInput.value.trim());
+  // a tire counted in two spots is two lines — location is part of what makes a row distinct
   const existing = (opts && opts.forceNew) ? null : sessionLog.find(e =>
     e.brand===entry.brand && e.model===entry.model && e.size===entry.size &&
-    e.notes===entry.notes && !e.dot && !entry.dot);
+    e.notes===entry.notes && (e.location||'')===loc && !e.dot && !entry.dot);
   let id;
   if(existing){
     existing.qty += 1;
     id = existing.id;
   } else {
     id = logIdSeq++;
-    sessionLog.unshift({ id, qty: 1, ...entry, dot: entry.dot || '', comment: entry.comment || '' });
+    sessionLog.unshift({ id, qty: 1, ...entry, dot: entry.dot || '', comment: entry.comment || '', location: loc });
   }
   renderLog();
   showToast((existing ? existing.qty+'×  ' : '+1  ') + entry.brand + ' ' + entry.size);
@@ -968,7 +1058,10 @@ function renderLog(){
       </div>
       <div class="log-controls">
         <div class="dot-ctrl">
-          <input type="text" placeholder="DOT" value="${e.dot || ''}" data-id="${e.id}" data-role="dot" maxlength="20">
+          <input type="text" placeholder="DOT" value="${escapeHtml(e.dot || '')}" data-id="${e.id}" data-role="dot" maxlength="20">
+        </div>
+        <div class="loc-ctrl">
+          <input type="text" placeholder="Location" value="${escapeHtml(e.location || '')}" data-id="${e.id}" data-role="location" maxlength="40">
         </div>
         <div class="qty-ctrl">
           <button data-act="dec" data-id="${e.id}">−</button>
@@ -1023,6 +1116,17 @@ logEntries.addEventListener('input', (e)=>{
     dotSaveTimer = setTimeout(saveState, 400);
     return;
   }
+
+  const locIn = e.target.closest('input[data-role="location"]');
+  if(locIn){
+    const id = parseInt(locIn.dataset.id,10);
+    const entry = sessionLog.find(x=>x.id===id);
+    if(entry) entry.location = locIn.value;
+    clearTimeout(dotSaveTimer);
+    dotSaveTimer = setTimeout(saveState, 400);
+    return;
+  }
+
   const qty = e.target.closest('input[data-role="qty"]');
   if(qty){
     // update totals in place — a full redraw here would yank the keyboard away mid-number
@@ -1278,13 +1382,13 @@ function exportRows(){
   const date = $('dateInput').value;
   const counter = $('counterInput').value.trim();
   return sessionLog.slice().reverse().map(e => [
-    container, date, counter, e.brand, e.model === '-' ? '' : e.model,
+    container, date, counter, e.location || '', e.brand, e.model === '-' ? '' : e.model,
     e.size, e.dot || '', e.cat, e.notes || '', e.comment || '', e.qty
   ]);
 }
 
-const EXPORT_HEADER = ['Container','Date','Counted By','Brand','Model','Size','DOT','Category','Spec','Comments','Qty'];
-const EXPORT_WIDTHS = [15, 12, 15, 18, 22, 18, 16, 17, 14, 46, 7];
+const EXPORT_HEADER = ['Container','Date','Counted By','Location','Brand','Model','Size','DOT','Category','Spec','Comments','Qty'];
+const EXPORT_WIDTHS = [15, 12, 15, 20, 18, 22, 18, 16, 17, 14, 46, 7];
 
 $('exportBtn').addEventListener('click', ()=>{
   if(sessionLog.length === 0){ showToast('Log is empty'); return; }
@@ -1312,20 +1416,20 @@ $('exportBtn').addEventListener('click', ()=>{
   const headerRow = rows.length;
   data.forEach(r => {
     // give a row extra height when the comment will wrap, so nothing hides behind a cell edge
-    const comment = String(r[9] || '');
+    const comment = String(r[10] || '');
     const lines = Math.min(4, Math.ceil(comment.length / 46) || 1);
     rows.push({
       h: lines > 1 ? 15 * lines : 0,
-      cells: r.map((v, i) => i === 10 ? {v, s:6, num:true} : {v, s:5})
+      cells: r.map((v, i) => i === 11 ? {v, s:6, num:true} : {v, s:5})
     });
   });
   const lastDataRow = rows.length;
 
-  rows.push({ h: 22, cells: [
-    {v:'TOTAL', s:7}, {v:'', s:7}, {v:'', s:7}, {v:'', s:7}, {v:'', s:7}, {v:'', s:7},
-    {v:'', s:7}, {v:'', s:7}, {v:'', s:7}, {v:sessionLog.length + ' line items', s:7},
-    {v:totalQty, s:7, num:true}
-  ]});
+  const totalCells = EXPORT_HEADER.map(()=> ({v:'', s:7}));
+  totalCells[0] = {v:'TOTAL', s:7};
+  totalCells[EXPORT_HEADER.length-2] = {v:sessionLog.length + ' line items', s:7};
+  totalCells[EXPORT_HEADER.length-1] = {v:totalQty, s:7, num:true};
+  rows.push({ h: 22, cells: totalCells });
 
   const bytes = buildXlsx(rows, EXPORT_WIDTHS, {
     headerRow, lastDataRow,
