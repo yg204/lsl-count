@@ -242,7 +242,12 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
   cursor:pointer;
 }
 .qty-ctrl button:active{border-color:var(--amber); color:var(--amber);}
-.qty-ctrl .qty{width:22px; text-align:center; font-family:var(--mono); font-size:14px; font-weight:600;}
+.qty-ctrl .qty{
+  width:42px; text-align:center; font-family:var(--mono); font-size:16px; font-weight:600;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:7px;
+  color:var(--ink); padding:7px 2px;
+}
+.qty-ctrl .qty:focus{outline:none; border-color:var(--amber);}
 .del-btn{
   flex-shrink:0; background:none; border:none; color:var(--red); font-size:19px;
   padding:8px 6px; cursor:pointer; min-width:34px; min-height:34px;
@@ -255,11 +260,13 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 }
 .row-act:active{border-color:var(--amber); color:var(--amber);}
 .dot-act{color:var(--amber); border-color:rgba(242,179,61,.35);}
-.split-btn{
+.add-row-btn{
   flex-shrink:0; background:var(--surface-2); border:1px solid var(--amber);
-  color:var(--amber); border-radius:8px; font-size:12px; font-weight:700;
-  font-family:var(--sans); height:34px; padding:0 9px; cursor:pointer;
+  color:var(--amber); border-radius:8px; font-size:19px; font-weight:600;
+  font-family:var(--sans); width:34px; height:34px; line-height:1;
+  padding:0; cursor:pointer;
 }
+.add-row-btn:active{background:var(--amber); color:var(--amber-ink);}
 .hint-line{
   font-size:11.5px; color:var(--ink-dim); margin:-4px 0 12px; line-height:1.4;
   font-family:var(--mono);
@@ -911,25 +918,19 @@ function addToLog(entry, opts){
   return id;
 }
 
-// Split a rolled-up line into one row per tire, so each can carry its own DOT.
-function splitEntry(id){
+// Add another row for the same tire — different DOT, its own piece count. Batches of
+// one DOT are the unit that actually gets counted, so a row means "this many, this DOT",
+// not one row per tire.
+function duplicateEntry(id){
   const idx = sessionLog.findIndex(x=>x.id===id);
   if(idx < 0) return;
   const e = sessionLog[idx];
-  if(e.qty < 2) return;
-  if(e.qty > 12 && !confirm(`Split this into ${e.qty} separate lines, one per tire?`)) return;
-
-  const copies = [];
-  for(let i=0;i<e.qty;i++){
-    // the original keeps its DOT and comment; the rest start clean
-    copies.push(i === 0
-      ? { ...e, qty:1 }
-      : { ...e, id: logIdSeq++, qty:1, dot:'', comment:'' });
-  }
-  sessionLog.splice(idx, 1, ...copies);
+  // sits directly under its sibling so the same tire stays together in the list
+  const copy = { ...e, id: logIdSeq++, qty: 1, dot: '', comment: '' };
+  sessionLog.splice(idx + 1, 0, copy);
   renderLog();
-  showToast('Split into ' + copies.length + ' lines — add a DOT to each');
-  focusDot(copies[0].id);
+  showToast('Same tire — enter the DOT and count');
+  focusDot(copy.id);
 }
 
 function changeQty(id, delta){
@@ -971,10 +972,10 @@ function renderLog(){
         </div>
         <div class="qty-ctrl">
           <button data-act="dec" data-id="${e.id}">−</button>
-          <span class="qty">${e.qty}</span>
+          <input class="qty" type="text" inputmode="numeric" pattern="[0-9]*" value="${e.qty}" data-id="${e.id}" data-role="qty" aria-label="Pieces">
           <button data-act="inc" data-id="${e.id}">+</button>
         </div>
-        ${e.qty > 1 ? `<button class="split-btn" data-act="split" data-id="${e.id}" title="One line per tire, so each gets its own DOT">⑂ ${e.qty}</button>` : ''}
+        <button class="add-row-btn" data-act="dup" data-id="${e.id}" title="Another row for this tire with a different DOT">+</button>
         <button class="note-btn${e.comment ? ' has-note' : ''}" data-act="note" data-id="${e.id}" aria-label="Add a comment">✎</button>
         <button class="del-btn" data-act="del" data-id="${e.id}">🗑</button>
       </div>
@@ -992,7 +993,7 @@ logEntries.addEventListener('click', (e)=>{
   if(btn.dataset.act==='inc') changeQty(id, 1);
   if(btn.dataset.act==='dec') changeQty(id, -1);
   if(btn.dataset.act==='del') removeEntry(id);
-  if(btn.dataset.act==='split') splitEntry(id);
+  if(btn.dataset.act==='dup') duplicateEntry(id);
   if(btn.dataset.act==='note'){
     // Toggle in place rather than re-rendering — a full redraw would steal focus
     // from whatever else is open and scroll the list out from under a gloved thumb.
@@ -1012,21 +1013,33 @@ function escapeHtml(s){
 }
 
 let dotSaveTimer;
-let dotHintShown = false;
 logEntries.addEventListener('input', (e)=>{
   const input = e.target.closest('input[data-role="dot"]');
   if(input){
     const id = parseInt(input.dataset.id,10);
     const entry = sessionLog.find(x=>x.id===id);
     if(entry) entry.dot = input.value;
-    if(entry && entry.qty > 1 && !dotHintShown){
-      dotHintShown = true;
-      showToast('That DOT covers all ' + entry.qty + ' — tap ⑂ to split them apart');
-    }
     clearTimeout(dotSaveTimer);
     dotSaveTimer = setTimeout(saveState, 400);
     return;
   }
+  const qty = e.target.closest('input[data-role="qty"]');
+  if(qty){
+    // update totals in place — a full redraw here would yank the keyboard away mid-number
+    const id = parseInt(qty.dataset.id,10);
+    const entry = sessionLog.find(x=>x.id===id);
+    const val = parseInt(qty.value.replace(/[^0-9]/g,''), 10);
+    if(entry && Number.isFinite(val) && val > 0){
+      entry.qty = val;
+      const total = sessionLog.reduce((a,x)=>a+x.qty,0);
+      tabBadge.textContent = total;
+      logTotalQty.textContent = total;
+      clearTimeout(dotSaveTimer);
+      dotSaveTimer = setTimeout(saveState, 400);
+    }
+    return;
+  }
+
   const ta = e.target.closest('textarea[data-role="comment"]');
   if(ta){
     const id = parseInt(ta.dataset.id,10);
@@ -1039,6 +1052,18 @@ logEntries.addEventListener('input', (e)=>{
     clearTimeout(dotSaveTimer);
     dotSaveTimer = setTimeout(saveState, 400);
   }
+});
+
+logEntries.addEventListener('focusout', (e)=>{
+  const qty = e.target.closest('input[data-role="qty"]');
+  if(!qty) return;
+  const id = parseInt(qty.dataset.id,10);
+  const entry = sessionLog.find(x=>x.id===id);
+  const val = parseInt(qty.value.replace(/[^0-9]/g,''), 10);
+  if(entry && (!Number.isFinite(val) || val < 1)){
+    qty.value = entry.qty;   // restore rather than silently dropping the line
+  }
+  renderLog();
 });
 
 $('clearLogBtn').addEventListener('click', ()=>{
