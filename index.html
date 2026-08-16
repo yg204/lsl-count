@@ -46,6 +46,13 @@ body{
    text input in this app is pinned to 16px so tapping into a field never triggers it */
 input, select, textarea{ font-size:16px; }
 
+.wordmark{
+  height:26px; width:auto; flex-shrink:0; margin-right:2px; overflow:visible;
+}
+.brand-row h1{
+  border-left:1px solid var(--line); padding-left:10px; margin-left:8px;
+}
+
 /* install / update bar */
 .update-bar{
   display:none; align-items:center; justify-content:space-between; gap:10px;
@@ -118,15 +125,16 @@ header{
 .session-grid{
   display:grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap:8px;
 }
-.session-grid .field-wide{grid-column:1 / -1;}
-.loc-ctrl{flex:1 1 120px; min-width:90px;}
-.loc-ctrl input{
-  width:100%; box-sizing:border-box; background:var(--surface-2);
+/* container numbers are short, so this stays narrow and the row holds one line */
+.cont-ctrl{flex-shrink:0;}
+.cont-ctrl input{
+  width:76px; box-sizing:border-box; background:var(--surface-2);
   border:1px solid var(--line); color:var(--ink); border-radius:7px;
-  padding:8px; font-size:16px; font-family:var(--mono);
+  padding:8px 6px; font-size:16px; font-family:var(--mono);
+  text-transform:uppercase; text-align:center;
 }
-.loc-ctrl input::placeholder{color:var(--ink-dim);}
-.loc-ctrl input:focus{outline:none; border-color:var(--amber);}
+.cont-ctrl input::placeholder{color:var(--ink-dim); text-transform:none;}
+.cont-ctrl input:focus{outline:none; border-color:var(--amber);}
 .field label{
   display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em;
   color:var(--ink-dim); margin-bottom:4px; font-weight:600;
@@ -353,7 +361,12 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 
 <header>
   <div class="brand-row">
-    <h1>LSL Container Count</h1>
+    <svg class="wordmark" viewBox="0 0 300 118" role="img" aria-label="Yale">
+      <title>Yale</title>
+      <g transform="translate(12,6) scale(0.92) skewX(-12)" fill="#F2B33D"><path d="M2 0 L22 0 L35 28 L48 0 L68 0 L43 50 L43 82 L27 90 L27 50 Z"/><path fill-rule="evenodd" d="M98 0 L118 0 L144 90 L124 90 L119 71 L97 71 L92 90 L72 90 Z M103 58 L115 58 L109 30 Z"/><path d="M152 0 L172 0 L172 72 L210 72 L210 90 L152 90 Z"/><path d="M218 0 L278 0 L278 17 L238 17 L238 36 L270 36 L270 53 L238 53 L238 73 L278 73 L278 90 L218 90 Z"/></g>
+      <polygon points="8,100 286,100 276,114 -2,114" fill="#F2B33D"/>
+    </svg>
+    <h1>Container count</h1>
     <span class="tick" id="netTick"></span>
   </div>
   <div class="session-grid">
@@ -368,10 +381,6 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
     <div class="field">
       <label for="counterInput">Counted by</label>
       <input id="counterInput" type="text" placeholder="Initials" autocomplete="off">
-    </div>
-    <div class="field field-wide">
-      <label for="locationInput">Location — applied to new entries</label>
-      <input id="locationInput" type="text" placeholder="e.g. Bay 2, back stack, row 3" autocomplete="off">
     </div>
   </div>
   <div class="view-tabs">
@@ -523,7 +532,7 @@ function knownCategories(){
 }
 
 // ---------- state ----------
-let sessionLog = []; // {id, brand, model, size, cat, notes, qty, dot, comment, location}
+let sessionLog = []; // {id, brand, model, size, cat, notes, qty, dot, comment, container}
 let logIdSeq = 1;
 
 const $ = (id) => document.getElementById(id);
@@ -543,7 +552,6 @@ const toast = $('toast');
 const containerInput = $('containerInput');
 const dateInput = $('dateInput');
 const counterInput = $('counterInput');
-const locationInput = $('locationInput');
 const saveIndicator = $('saveIndicator');
 const libraryView = $('libraryView');
 const tabLibrary = $('tabLibrary');
@@ -563,7 +571,6 @@ function saveState(){
       container: containerInput.value,
       date: dateInput.value,
       counter: counterInput.value,
-      location: locationInput.value,
       savedAt: Date.now()
     }));
     flashSaveIndicator();
@@ -593,7 +600,6 @@ function loadState(){
       if(data.container) containerInput.value = data.container;
       if(data.date) dateInput.value = data.date;
       if(data.counter) counterInput.value = data.counter;
-      if(data.location) locationInput.value = data.location;
       showToast('Restored last session — ' + sessionLog.reduce((a,e)=>a+e.qty,0) + ' tires');
     }
   }catch(err){ /* corrupted save, ignore and start fresh */ }
@@ -605,7 +611,7 @@ loadState();
 loadLibOverrides();
 buildEffectiveLibrary();
 
-[containerInput, dateInput, counterInput, locationInput].forEach(inp => inp.addEventListener('input', saveState));
+[containerInput, dateInput, counterInput].forEach(inp => inp.addEventListener('input', saveState));
 
 // ---------- view switching ----------
 function switchView(view){
@@ -990,18 +996,18 @@ function addToLog(entry, opts){
   // DOT is typically unique per tire, so don't fold new adds into an existing row —
   // only bump qty for exact repeat taps where DOT is still blank on both. opts.forceNew
   // skips the roll-up entirely, which is how "+DOT" gives every tire its own line.
-  const loc = entry.location != null ? entry.location : (locationInput.value.trim());
-  // a tire counted in two spots is two lines — location is part of what makes a row distinct
+  const cont = entry.container != null ? entry.container : containerInput.value.trim();
+  // the same tire out of two different containers stays two lines
   const existing = (opts && opts.forceNew) ? null : sessionLog.find(e =>
     e.brand===entry.brand && e.model===entry.model && e.size===entry.size &&
-    e.notes===entry.notes && (e.location||'')===loc && !e.dot && !entry.dot);
+    e.notes===entry.notes && (e.container||'')===cont && !e.dot && !entry.dot);
   let id;
   if(existing){
     existing.qty += 1;
     id = existing.id;
   } else {
     id = logIdSeq++;
-    sessionLog.unshift({ id, qty: 1, ...entry, dot: entry.dot || '', comment: entry.comment || '', location: loc });
+    sessionLog.unshift({ id, qty: 1, ...entry, dot: entry.dot || '', comment: entry.comment || '', container: cont });
   }
   renderLog();
   showToast((existing ? existing.qty+'×  ' : '+1  ') + entry.brand + ' ' + entry.size);
@@ -1060,8 +1066,8 @@ function renderLog(){
         <div class="dot-ctrl">
           <input type="text" placeholder="DOT" value="${escapeHtml(e.dot || '')}" data-id="${e.id}" data-role="dot" maxlength="20">
         </div>
-        <div class="loc-ctrl">
-          <input type="text" placeholder="Location" value="${escapeHtml(e.location || '')}" data-id="${e.id}" data-role="location" maxlength="40">
+        <div class="cont-ctrl">
+          <input type="text" placeholder="Cont #" value="${escapeHtml(e.container || '')}" data-id="${e.id}" data-role="container" maxlength="14">
         </div>
         <div class="qty-ctrl">
           <button data-act="dec" data-id="${e.id}">−</button>
@@ -1117,11 +1123,11 @@ logEntries.addEventListener('input', (e)=>{
     return;
   }
 
-  const locIn = e.target.closest('input[data-role="location"]');
-  if(locIn){
-    const id = parseInt(locIn.dataset.id,10);
+  const contIn = e.target.closest('input[data-role="container"]');
+  if(contIn){
+    const id = parseInt(contIn.dataset.id,10);
     const entry = sessionLog.find(x=>x.id===id);
-    if(entry) entry.location = locIn.value;
+    if(entry) entry.container = contIn.value;
     clearTimeout(dotSaveTimer);
     dotSaveTimer = setTimeout(saveState, 400);
     return;
@@ -1177,6 +1183,16 @@ $('clearLogBtn').addEventListener('click', ()=>{
 });
 
 // ---------- Excel export ----------
+// The report header mark, as PNG bytes. Baked in rather than fetched — the export has to
+// work in a container with no signal, same as everything else.
+const LOGO_B64 = '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';
+
+function logoBytes(){
+  const bin = atob(LOGO_B64);
+  const out = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 // An .xlsx is a zip of XML parts. There's no library to load here — the app has to keep
 // working in a container with no signal — so this writes both the zip and the sheet by
 // hand. Store-only (no deflate) keeps it to about 60 lines; a count sheet is small enough
@@ -1208,7 +1224,7 @@ function zipStore(files){
 
   files.forEach(f => {
     const name = enc.encode(f.name);
-    const data = enc.encode(f.data);
+    const data = (f.data instanceof Uint8Array) ? f.data : enc.encode(f.data);
     const crc = crc32(data);
     // fixed DOS timestamp — Excel doesn't care and it keeps output deterministic
     const time = 0, date = 0x2100;
@@ -1303,18 +1319,22 @@ ${merges}
 <autoFilter ref="A${meta.headerRow}:${colName(cols.length)}${meta.lastDataRow}"/>
 <pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
 <pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/>
+<drawing xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/>
 </worksheet>`;
 
   // 0 default · 1 title · 2 meta label · 3 meta value · 4 header · 5 body wrap · 6 body centred · 7 total
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<fonts count="6">
+<fonts count="9">
 <font><sz val="11"/><name val="Calibri"/></font>
 <font><b/><sz val="16"/><color rgb="FF17181A"/><name val="Calibri"/></font>
 <font><b/><sz val="10"/><color rgb="FF6B6E73"/><name val="Calibri"/></font>
 <font><sz val="11"/><color rgb="FF17181A"/><name val="Calibri"/></font>
 <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
 <font><b/><sz val="11"/><color rgb="FF17181A"/><name val="Calibri"/></font>
+<font><b/><sz val="13"/><color rgb="FF17181A"/><name val="Calibri"/></font>
+<font><sz val="10"/><color rgb="FF6B6A65"/><name val="Calibri"/></font>
+<font><sz val="1"/><color rgb="FFF2B33D"/><name val="Calibri"/></font>
 </fonts>
 <fills count="4">
 <fill><patternFill patternType="none"/></fill>
@@ -1326,9 +1346,10 @@ ${merges}
 <border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD8D8D8"/></left><right style="thin"><color rgb="FFD8D8D8"/></right><top style="thin"><color rgb="FFD8D8D8"/></top><bottom style="thin"><color rgb="FFD8D8D8"/></bottom><diagonal/></border>
 <border><left/><right/><top style="medium"><color rgb="FF17181A"/></top><bottom/><diagonal/></border>
+<border><left/><right/><top/><bottom style="medium"><color rgb="FFF2B33D"/></bottom><diagonal/></border>
 </borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="8">
+<cellXfs count="11">
 <xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0"/>
 <xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"><alignment vertical="center"/></xf>
 <xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/>
@@ -1337,20 +1358,51 @@ ${merges}
 <xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf xfId="0" numFmtId="0" fontId="3" fillId="0" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
 <xf xfId="0" numFmtId="0" fontId="5" fillId="3" borderId="2" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf xfId="0" numFmtId="0" fontId="6" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf xfId="0" numFmtId="0" fontId="7" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf xfId="0" numFmtId="0" fontId="8" fillId="0" borderId="3" applyFont="1" applyBorder="1"/>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 <dxfs count="0"/>
 </styleSheet>`;
+
+  // The logo floats over the header cells as a drawing anchored from A1. Excel needs the
+  // image, a drawing part describing where it sits, and rels tying the two to the sheet.
+  const drawing = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<xdr:oneCellAnchor>
+<xdr:from><xdr:col>0</xdr:col><xdr:colOff>76200</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>76200</xdr:rowOff></xdr:from>
+<xdr:ext cx="2286000" cy="843280"/>
+<xdr:pic>
+<xdr:nvPicPr><xdr:cNvPr id="2" name="Yale"/><xdr:cNvPicPr/></xdr:nvPicPr>
+<xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>
+<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2286000" cy="843280"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>
+</xdr:pic>
+<xdr:clientData/>
+</xdr:oneCellAnchor>
+</xdr:wsDr>`;
 
   return zipStore([
     { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>
 </Types>` },
+    { name: 'xl/drawings/drawing1.xml', data: drawing },
+    { name: 'xl/drawings/_rels/drawing1.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/>
+</Relationships>` },
+    { name: 'xl/worksheets/_rels/sheet1.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>` },
+    { name: 'xl/media/image1.png', data: logoBytes() },
     { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
@@ -1382,13 +1434,13 @@ function exportRows(){
   const date = $('dateInput').value;
   const counter = $('counterInput').value.trim();
   return sessionLog.slice().reverse().map(e => [
-    container, date, counter, e.location || '', e.brand, e.model === '-' ? '' : e.model,
+    e.container || container, date, counter, e.brand, e.model === '-' ? '' : e.model,
     e.size, e.dot || '', e.cat, e.notes || '', e.comment || '', e.qty
   ]);
 }
 
-const EXPORT_HEADER = ['Container','Date','Counted By','Location','Brand','Model','Size','DOT','Category','Spec','Comments','Qty'];
-const EXPORT_WIDTHS = [15, 12, 15, 20, 18, 22, 18, 16, 17, 14, 46, 7];
+const EXPORT_HEADER = ['Container','Date','Counted By','Brand','Model','Size','DOT','Category','Spec','Comments','Qty'];
+const EXPORT_WIDTHS = [15, 12, 15, 18, 22, 18, 16, 17, 14, 46, 7];
 
 $('exportBtn').addEventListener('click', ()=>{
   if(sessionLog.length === 0){ showToast('Log is empty'); return; }
@@ -1399,12 +1451,21 @@ $('exportBtn').addEventListener('click', ()=>{
   const totalQty = sessionLog.reduce((a,e)=>a+e.qty,0);
   const lastCol = colName(EXPORT_HEADER.length);
 
+  // Rows 1-3 are the letterhead: the logo drawing sits over the left, these cells carry
+  // the right-hand block. Row 4 is the amber rule under both.
+  const lastIdx = EXPORT_HEADER.length - 1;
+  const rightBlock = (text, style) => {
+    const cells = EXPORT_HEADER.map(()=> ({v:'', s:0}));
+    cells[lastIdx] = {v:text, s:style};
+    return cells;
+  };
+
   const rows = [];
-  rows.push({ h: 26, cells: [{v:'LSL DISTRIBUTORS — CONTAINER TIRE COUNT', s:1}] });
-  rows.push({ cells: [
-    {v:'Container', s:2}, {v:container || '—', s:3}, {v:'Date', s:2}, {v:date, s:3},
-    {v:'Counted by', s:2}, {v:counter || '—', s:3}
-  ]});
+  rows.push({ h: 21, cells: rightBlock('Container tire count', 8) });
+  rows.push({ h: 15, cells: rightBlock('Prepared for LSL Distributors', 9) });
+  rows.push({ h: 15, cells: rightBlock(
+    (container || 'Container —') + '  ·  ' + date + (counter ? '  ·  ' + counter : ''), 9) });
+  rows.push({ h: 10, cells: EXPORT_HEADER.map(()=> ({v:'', s:10})) });
   rows.push({ cells: [
     {v:'Total tires', s:2}, {v:totalQty, s:3, num:true}, {v:'Line items', s:2},
     {v:sessionLog.length, s:3, num:true}, {v:'Exported', s:2},
@@ -1416,11 +1477,11 @@ $('exportBtn').addEventListener('click', ()=>{
   const headerRow = rows.length;
   data.forEach(r => {
     // give a row extra height when the comment will wrap, so nothing hides behind a cell edge
-    const comment = String(r[10] || '');
+    const comment = String(r[9] || '');
     const lines = Math.min(4, Math.ceil(comment.length / 46) || 1);
     rows.push({
       h: lines > 1 ? 15 * lines : 0,
-      cells: r.map((v, i) => i === 11 ? {v, s:6, num:true} : {v, s:5})
+      cells: r.map((v, i) => i === 10 ? {v, s:6, num:true} : {v, s:5})
     });
   });
   const lastDataRow = rows.length;
@@ -1432,8 +1493,7 @@ $('exportBtn').addEventListener('click', ()=>{
   rows.push({ h: 22, cells: totalCells });
 
   const bytes = buildXlsx(rows, EXPORT_WIDTHS, {
-    headerRow, lastDataRow,
-    merges: ['A1:' + lastCol + '1']
+    headerRow, lastDataRow, merges: []
   });
 
   const fname = 'LSL_Count_' + (container || 'session') + '_' + date + '.xlsx';
