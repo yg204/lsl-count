@@ -143,26 +143,18 @@ header{
 .cont-ctrl input::placeholder{color:var(--ink-dim); text-transform:none;}
 .cont-ctrl input:focus{outline:none; border-color:var(--amber);}
 
-/* One grid definition drives both the label strip and every row's field line, so the
-   columns actually line up instead of merely looking similar. */
-.log-grid{
-  display:grid;
-  grid-template-columns: 1.05fr 1.05fr 1.1fr 0.8fr 1fr;
-  gap:5px;
-}
-.log-col-strip{
-  composes:log-grid;
-  display:grid; grid-template-columns: 1.05fr 1.05fr 1.1fr 0.8fr 1fr; gap:5px;
-  margin-top:8px; padding:0 2px;
-}
-.log-col-strip span{
-  font-size:9px; text-transform:uppercase; letter-spacing:.06em;
-  color:var(--ink-dim); font-weight:600; white-space:nowrap; overflow:hidden;
-  text-overflow:ellipsis;
-}
+/* Each field carries its own label rather than relying on a strip above the list. A
+   detached header can't stay aligned once rows have their own padding, and it scrolls
+   out of sight anyway — three rows in you're back to guessing which box is which. */
 .log-fields{
   display:grid; grid-template-columns: 1.05fr 1.05fr 1.1fr 0.8fr 1fr; gap:5px;
   width:100%; margin-top:7px;
+}
+.lf{display:flex; flex-direction:column; gap:3px; min-width:0;}
+.lf > span{
+  font-size:8.5px; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--ink-dim); font-weight:600; text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .log-fields input{
   width:100%; box-sizing:border-box; min-width:0;
@@ -170,9 +162,11 @@ header{
   border-radius:7px; padding:8px 4px; font-size:15px; font-family:var(--mono);
   text-align:center;
 }
-.log-fields input::placeholder{color:var(--ink-dim); font-size:12px;}
 .log-fields input:focus{outline:none; border-color:var(--amber);}
-.log-fields input.filled{border-color:rgba(242,179,61,.4);}
+/* filled fields get an amber edge and a brighter label, so a row missing a DOT
+   is obvious at arm's length without reading anything */
+.log-fields input.filled{border-color:rgba(242,179,61,.45);}
+.lf:has(input.filled) > span{color:var(--amber);}
 .field label{
   display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em;
   color:var(--ink-dim); margin-bottom:4px; font-weight:600;
@@ -462,9 +456,6 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 <div id="logView">
   <div class="log-screen-header">
     <div class="log-stats"><b id="logTotalQty">0</b> tires logged &nbsp;·&nbsp; <span id="logLineCount">0</span> line items</div>
-    <div class="log-col-strip" id="logColStrip">
-      <span>Cont #</span><span>DOT</span><span>Load/Speed</span><span>Ply/LR</span><span>Type</span>
-    </div>
   </div>
   <div class="log-screen-body" id="logEntries"></div>
   <div class="log-footer">
@@ -1146,11 +1137,11 @@ function renderLog(){
         <button class="del-btn" data-act="del" data-id="${e.id}">🗑</button>
       </div>
       <div class="log-fields">
-        <input type="text" placeholder="Cont #" value="${escapeHtml(e.container || '')}" data-id="${e.id}" data-role="container" maxlength="14" class="${e.container ? 'filled' : ''}">
-        <input type="text" placeholder="DOT" value="${escapeHtml(e.dot || '')}" data-id="${e.id}" data-role="dot" maxlength="20" class="${e.dot ? 'filled' : ''}">
-        <input type="text" placeholder="Load/Sp" value="${escapeHtml(e.loadSpeed || '')}" data-id="${e.id}" data-role="loadSpeed" maxlength="16" class="${e.loadSpeed ? 'filled' : ''}">
-        <input type="text" placeholder="Ply" value="${escapeHtml(e.ply || '')}" data-id="${e.id}" data-role="ply" maxlength="10" class="${e.ply ? 'filled' : ''}">
-        <input type="text" placeholder="Type" value="${escapeHtml(e.type || '')}" data-id="${e.id}" data-role="type" maxlength="14" list="typeList" class="${e.type ? 'filled' : ''}">
+        <label class="lf"><span>Cont #</span><input type="text" value="${escapeHtml(e.container || '')}" data-id="${e.id}" data-role="container" maxlength="14" class="${e.container ? 'filled' : ''}"></label>
+        <label class="lf"><span>DOT</span><input type="text" value="${escapeHtml(e.dot || '')}" data-id="${e.id}" data-role="dot" maxlength="20" class="${e.dot ? 'filled' : ''}"></label>
+        <label class="lf"><span>Load/Speed</span><input type="text" value="${escapeHtml(e.loadSpeed || '')}" data-id="${e.id}" data-role="loadSpeed" maxlength="16" class="${e.loadSpeed ? 'filled' : ''}"></label>
+        <label class="lf"><span>Ply/LR</span><input type="text" value="${escapeHtml(e.ply || '')}" data-id="${e.id}" data-role="ply" maxlength="10" class="${e.ply ? 'filled' : ''}"></label>
+        <label class="lf"><span>Type</span><input type="text" value="${escapeHtml(e.type || '')}" data-id="${e.id}" data-role="type" maxlength="14" list="typeList" class="${e.type ? 'filled' : ''}"></label>
       </div>
       <div class="comment-wrap">
         <textarea data-id="${e.id}" data-role="comment" rows="2" placeholder="Damage, mismatch, DOT unreadable, wrong size on sidewall…">${escapeHtml(e.comment || '')}</textarea>
