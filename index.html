@@ -351,6 +351,23 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 }
 .hint-line.warn{color:var(--amber);}
 .spec-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+.snap-note{font-size:12px; color:var(--ink-dim); line-height:1.45; margin:-6px 0 14px;}
+.snap-empty{font-size:12.5px; color:var(--ink-dim); line-height:1.5; padding:14px 2px;}
+.snap-row{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:9px;
+  padding:11px 12px; margin-bottom:8px; cursor:pointer; color:var(--ink);
+  font-family:var(--sans);
+}
+.snap-row:active{border-color:var(--amber);}
+.snap-main{flex:1; min-width:0;}
+.snap-when{font-size:13px; font-weight:600;}
+.snap-reason{
+  font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim);
+  margin-left:7px; font-weight:600;
+}
+.snap-sub{font-size:11.5px; color:var(--ink-dim); font-family:var(--mono); margin-top:3px;}
+.snap-go{flex-shrink:0; font-size:11.5px; font-weight:700; color:var(--amber);}
 .spec-row .field input{padding:10px 8px;}
 .note-btn{
   flex-shrink:0; background:none; border:1px solid var(--line); border-radius:8px;
@@ -472,6 +489,8 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
     <button class="backup-link" id="backupBtn">↓ Backup file</button>
     <span class="backup-sep">·</span>
     <button class="backup-link" id="restoreBtn">↑ Restore</button>
+    <span class="backup-sep">·</span>
+    <button class="backup-link" id="recoverBtn">↺ Recover</button>
     <input type="file" id="restoreFile" accept="application/json" style="display:none;">
   </div>
 </header>
@@ -515,6 +534,17 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
     <button class="custom-add-btn add-item-btn" id="libAddBtn">+ Add new library item</button>
     <div class="results" id="libResults"></div>
   </main>
+</div>
+
+<div class="modal-backdrop" id="snapshotBackdrop">
+  <div class="modal">
+    <h2>Recover a snapshot</h2>
+    <p class="snap-note">Automatic copies of this session, kept on this device. Taken every few minutes while counting, and always before Clear log or Restore.</p>
+    <div id="snapshotList"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="snapClose">Close</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="libModalBackdrop">
@@ -650,6 +680,114 @@ const libResults = $('libResults');
 const libSearchHint = $('libSearchHint');
 const libClearBtn = $('libClearBtn');
 
+// ---------- rolling snapshots ----------
+// An undo, not a backup. Snapshots sit in the same browser storage as the live session,
+// so clearing website data takes them too — they protect against a mis-tapped Clear log
+// or a Restore that overwrote a session, which is how a day actually gets lost.
+const SNAPSHOT_KEY = 'lsl_container_count_snapshots_v1';
+const MAX_SNAPSHOTS = 8;
+const SNAPSHOT_INTERVAL_MS = 4 * 60 * 1000;
+let snapshots = [];
+let lastSnapshotAt = 0;
+
+function loadSnapshots(){
+  try{
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if(raw) snapshots = JSON.parse(raw) || [];
+  }catch(err){ snapshots = []; }
+}
+
+function writeSnapshots(){
+  // if storage is tight, drop the oldest and retry rather than losing the newest
+  for(let attempt = 0; attempt < MAX_SNAPSHOTS; attempt++){
+    try{
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
+      return true;
+    }catch(err){
+      if(snapshots.length <= 1) return false;
+      snapshots.pop();
+    }
+  }
+  return false;
+}
+
+function takeSnapshot(reason, force){
+  if(!sessionLog.length && !force) return;
+  const now = Date.now();
+  if(!force && now - lastSnapshotAt < SNAPSHOT_INTERVAL_MS) return;
+
+  const qty = sessionLog.reduce((a,e)=>a+e.qty,0);
+  const top = snapshots[0];
+  // don't stack identical copies — nothing changed since the last one
+  if(top && !force && top.qty === qty && top.lines === sessionLog.length) return;
+
+  snapshots.unshift({
+    at: now, reason: reason || 'auto', qty, lines: sessionLog.length,
+    container: containerInput.value, date: dateInput.value, counter: counterInput.value,
+    sessionLog: JSON.parse(JSON.stringify(sessionLog)), logIdSeq
+  });
+  if(snapshots.length > MAX_SNAPSHOTS) snapshots.length = MAX_SNAPSHOTS;
+  writeSnapshots();
+  lastSnapshotAt = now;
+}
+
+function relativeTime(ts){
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + ' min ago';
+  const hrs = Math.round(mins / 60);
+  if(hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+  const days = Math.round(hrs / 24);
+  return days === 1 ? 'yesterday' : days + ' days ago';
+}
+
+function renderSnapshots(){
+  const list = $('snapshotList');
+  if(!snapshots.length){
+    list.innerHTML = '<div class="snap-empty">No snapshots yet. One is taken every few minutes while you count, and always before Clear log or Restore.</div>';
+    return;
+  }
+  list.innerHTML = snapshots.map((s, i) => `
+    <button class="snap-row" data-snap="${i}">
+      <div class="snap-main">
+        <div class="snap-when">${relativeTime(s.at)}<span class="snap-reason">${escapeHtml(s.reason)}</span></div>
+        <div class="snap-sub">${s.qty} tire${s.qty===1?'':'s'} · ${s.lines} line${s.lines===1?'':'s'}${s.container ? ' · ' + escapeHtml(s.container) : ''}</div>
+      </div>
+      <span class="snap-go">Restore</span>
+    </button>
+  `).join('');
+}
+
+$('recoverBtn').addEventListener('click', ()=>{
+  loadSnapshots();
+  renderSnapshots();
+  $('snapshotBackdrop').classList.add('show');
+});
+$('snapClose').addEventListener('click', ()=> $('snapshotBackdrop').classList.remove('show'));
+$('snapshotBackdrop').addEventListener('click', (e)=>{
+  if(e.target === $('snapshotBackdrop')) $('snapshotBackdrop').classList.remove('show');
+});
+
+$('snapshotList').addEventListener('click', (e)=>{
+  const row = e.target.closest('[data-snap]');
+  if(!row) return;
+  const snap = snapshots[parseInt(row.dataset.snap, 10)];
+  if(!snap) return;
+  const cur = sessionLog.reduce((a,x)=>a+x.qty,0);
+  if(!confirm(`Roll back to ${snap.qty} tires from ${relativeTime(snap.at)}?\n\nYour current ${cur} will be snapshotted first, so this is reversible.`)) return;
+
+  takeSnapshot('before rollback', true);
+  sessionLog = JSON.parse(JSON.stringify(snap.sessionLog));
+  logIdSeq = snap.logIdSeq || (Math.max(0, ...sessionLog.map(e=>e.id||0)) + 1);
+  if(snap.container !== undefined) containerInput.value = snap.container;
+  if(snap.date) dateInput.value = snap.date;
+  if(snap.counter !== undefined) counterInput.value = snap.counter;
+  saveState();
+  renderLog();
+  $('snapshotBackdrop').classList.remove('show');
+  showToast('Rolled back to ' + snap.qty + ' tires');
+});
+
 // ---------- autosave / restore ----------
 // Everything below saves to this browser's local storage after every change, so a closed
 // tab, a crash, or a low-battery shutdown doesn't lose the session. Export to CSV is still
@@ -697,6 +835,7 @@ function loadState(){
 
 // default date = today, then restore any saved session over it
 $('dateInput').value = new Date().toISOString().slice(0,10);
+loadSnapshots();
 loadState();
 loadLibOverrides();
 buildEffectiveLibrary();
@@ -1148,6 +1287,7 @@ function removeEntry(id){
 
 function renderLog(){
   saveState();
+  takeSnapshot('auto');
   const total = sessionLog.reduce((a,e)=>a+e.qty,0);
   tabBadge.textContent = total;
   logTotalQty.textContent = total;
@@ -1314,7 +1454,8 @@ logEntries.addEventListener('focusout', (e)=>{
 });
 
 $('clearLogBtn').addEventListener('click', ()=>{
-  if(sessionLog.length && !confirm('Clear the entire session log? This can\'t be undone.')) return;
+  if(sessionLog.length && !confirm('Clear the entire session log?\n\nA snapshot is saved first, so you can get it back from Recover.')) return;
+  takeSnapshot('before clear', true);
   sessionLog = [];
   renderLog();
 });
@@ -1558,6 +1699,25 @@ ${merges}
   ]);
 }
 
+// Hand the file to the OS share sheet when we can, so one tap sends it to Mail, Files
+// or Drive — off this device entirely. Falls back to a plain download everywhere else.
+function shareOrDownload(blob, fname, mime){
+  try{
+    const file = new File([blob], fname, { type: mime || blob.type || 'application/octet-stream' });
+    if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+      navigator.share({ files: [file], title: fname })
+        .then(()=> showToast('Shared — ' + fname))
+        .catch(err=>{
+          // user backed out of the sheet; don't dump a file they didn't ask for
+          if(err && err.name === 'AbortError') return;
+          downloadBlob(blob, fname);
+        });
+      return;
+    }
+  }catch(err){ /* File or canShare unavailable — fall through */ }
+  downloadBlob(blob, fname);
+}
+
 function downloadBlob(blob, fname){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1635,7 +1795,8 @@ $('exportBtn').addEventListener('click', ()=>{
   });
 
   const fname = 'LSL_Count_' + (container || 'session') + '_' + date + '.xlsx';
-  downloadBlob(new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), fname);
+  const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  shareOrDownload(new Blob([bytes], {type: XLSX_MIME}), fname, XLSX_MIME);
   showToast('Exported ' + fname);
 });
 
@@ -1653,7 +1814,7 @@ $('exportCsvBtn').addEventListener('click', ()=>{
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
   // BOM so Excel opens accented brand names correctly instead of mojibake
   const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
-  downloadBlob(blob, 'LSL_Count_' + (container || 'session') + '_' + date + '.csv');
+  shareOrDownload(blob, 'LSL_Count_' + (container || 'session') + '_' + date + '.csv', 'text/csv');
   showToast('CSV exported');
 });
 
@@ -1668,13 +1829,8 @@ $('backupBtn').addEventListener('click', ()=>{
     libOverrides: { ...libOverrides, libAddSeq }
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
   const fname = 'LSL_Backup_' + new Date().toISOString().slice(0,10) + '.json';
-  a.href = url; a.download = fname;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Backup saved — ' + fname);
+  shareOrDownload(blob, fname, 'application/json');
 });
 
 const restoreFileInput = $('restoreFile');
@@ -1698,6 +1854,7 @@ restoreFileInput.addEventListener('change', ()=>{
       : `Restore backup from ${new Date(data.exportedAt).toLocaleString()} — ${incomingTotal} tires?`;
     if(!confirm(msg)){ restoreFileInput.value=''; return; }
 
+    takeSnapshot('before restore', true);
     sessionLog = data.session.sessionLog || [];
     logIdSeq = data.session.logIdSeq || 1;
     if(data.session.container !== undefined) containerInput.value = data.session.container;
@@ -1761,6 +1918,21 @@ window.addEventListener('orientationchange', syncHeaderHeight);
 setTimeout(syncHeaderHeight, 300); // catch late font-swap reflow
 
 renderLog();
+
+// ---------- flush on the way out ----------
+// Typing is debounced 400ms so the keyboard doesn't stutter, which leaves a small window
+// where the last keystroke isn't written yet. Swiping the app away or locking the phone
+// fires these, so that window closes instead of silently costing you a DOT.
+function flushPendingSave(){
+  clearTimeout(dotSaveTimer);
+  saveState();
+  saveLibOverrides();
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden') flushPendingSave();
+});
+window.addEventListener('pagehide', flushPendingSave);
+window.addEventListener('blur', flushPendingSave);
 
 // ---------- offline status ----------
 // The whole app (library included) is baked into this file, so losing signal inside a
