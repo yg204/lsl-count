@@ -147,8 +147,8 @@ header{
    detached header can't stay aligned once rows have their own padding, and it scrolls
    out of sight anyway — three rows in you're back to guessing which box is which. */
 .log-fields{
-  display:grid; grid-template-columns: 1.05fr 1.05fr 1.1fr 0.8fr 1fr; gap:5px;
-  width:100%; margin-top:7px;
+  display:grid; grid-template-columns: 1fr 1fr 1fr; gap:7px;
+  width:100%;
 }
 .lf{display:flex; flex-direction:column; gap:3px; min-width:0;}
 .lf > span{
@@ -267,8 +267,37 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
   padding:12px 0; border-bottom:1px solid var(--line);
 }
 .log-entry .info{flex:1 1 140px; min-width:0;}
-.log-entry .title{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.log-entry .sub{font-size:11.5px; color:var(--ink-dim); font-family:var(--mono); margin-top:2px;}
+.log-entry .title-row{display:flex; align-items:center; gap:7px; min-width:0;}
+.log-entry .title{
+  font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; min-width:0;
+}
+/* the container rides with the tire name — it's identity, not a spec */
+.cont-badge{
+  flex-shrink:0; font-family:var(--mono); font-size:10.5px; font-weight:600;
+  color:var(--amber); background:rgba(242,179,61,.12);
+  border:1px solid rgba(242,179,61,.3); border-radius:5px; padding:2px 6px;
+  white-space:nowrap;
+}
+.cont-badge.empty{color:var(--ink-dim); background:none; border-style:dashed; border-color:var(--line);}
+
+/* Summary line: only fields that actually have a value get rendered, so a tire with
+   no ply or load rating doesn't leave a row of empty boxes on screen. */
+.log-entry .sub{
+  font-size:11.5px; color:var(--ink-dim); font-family:var(--mono); margin-top:3px;
+  display:flex; flex-wrap:wrap; gap:3px 9px; line-height:1.5;
+}
+.log-entry .sub .chip{white-space:nowrap;}
+.log-entry .sub .chip i{
+  font-style:normal; font-size:8.5px; text-transform:uppercase; letter-spacing:.05em;
+  color:#6E7076; margin-right:3px;
+}
+.log-entry .sub .chip b{font-weight:600; color:var(--ink);}
+.log-entry .sub .missing{color:#5A5C61;}
+.log-entry .note-line{
+  font-size:11px; color:var(--ink-dim); margin-top:4px; line-height:1.4;
+  font-style:italic; flex-basis:100%;
+}
 .log-controls{
   display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
   margin-left:auto;
@@ -330,8 +359,17 @@ mark{background:rgba(242,179,61,0.32); color:inherit; border-radius:2px;}
 }
 /* filled comments stay visibly marked — a note you can't see is a note you forget to read */
 .note-btn.has-note{border-color:var(--amber); color:var(--amber);}
-.comment-wrap{flex:1 1 100%; display:none; padding-top:2px;}
-.log-entry.show-comment .comment-wrap{display:block;}
+.comment-wrap{flex:1 1 100%; padding-top:10px;}
+.log-entry.show-edit .edit-panel{display:block;}
+.edit-panel{
+  display:none; flex-basis:100%; width:100%; margin-top:10px;
+  padding:11px 11px 12px; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:10px; box-sizing:border-box;
+}
+.edit-panel .panel-title{
+  font-size:9px; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--ink-dim); font-weight:600; margin-bottom:8px;
+}
 .comment-wrap textarea{
   width:100%; box-sizing:border-box; resize:vertical; min-height:52px;
   background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
@@ -1121,10 +1159,13 @@ function renderLog(){
   }
 
   logEntries.innerHTML = sessionLog.map(e => `
-    <div class="log-entry${e.comment ? ' show-comment' : ''}">
+    <div class="log-entry">
       <div class="info">
-        <div class="title">${e.brand}${e.model ? ' '+e.model : ''}</div>
-        <div class="sub">${e.size}${[e.loadSpeed, e.ply, e.type, e.notes].filter(Boolean).map(x=>' · '+x).join('')}</div>
+        <div class="title-row">
+          <span class="title">${e.brand}${e.model ? ' '+e.model : ''}</span>
+          <span class="cont-badge${e.container ? '' : ' empty'}">${e.container ? escapeHtml(e.container) : 'no cont #'}</span>
+        </div>
+        <div class="sub">${summaryChips(e)}</div>
       </div>
       <div class="log-controls">
         <div class="qty-ctrl">
@@ -1133,18 +1174,22 @@ function renderLog(){
           <button data-act="inc" data-id="${e.id}">+</button>
         </div>
         <button class="add-row-btn" data-act="dup" data-id="${e.id}" title="Another row for this tire with a different DOT">+</button>
-        <button class="note-btn${e.comment ? ' has-note' : ''}" data-act="note" data-id="${e.id}" aria-label="Add a comment">✎</button>
+        <button class="note-btn${e.comment ? ' has-note' : ''}" data-act="note" data-id="${e.id}" aria-label="Edit details">✎</button>
         <button class="del-btn" data-act="del" data-id="${e.id}">🗑</button>
       </div>
-      <div class="log-fields">
-        <label class="lf"><span>Cont #</span><input type="text" value="${escapeHtml(e.container || '')}" data-id="${e.id}" data-role="container" maxlength="14" class="${e.container ? 'filled' : ''}"></label>
-        <label class="lf"><span>DOT</span><input type="text" value="${escapeHtml(e.dot || '')}" data-id="${e.id}" data-role="dot" maxlength="20" class="${e.dot ? 'filled' : ''}"></label>
-        <label class="lf"><span>Load/Speed</span><input type="text" value="${escapeHtml(e.loadSpeed || '')}" data-id="${e.id}" data-role="loadSpeed" maxlength="16" class="${e.loadSpeed ? 'filled' : ''}"></label>
-        <label class="lf"><span>Ply/LR</span><input type="text" value="${escapeHtml(e.ply || '')}" data-id="${e.id}" data-role="ply" maxlength="10" class="${e.ply ? 'filled' : ''}"></label>
-        <label class="lf"><span>Type</span><input type="text" value="${escapeHtml(e.type || '')}" data-id="${e.id}" data-role="type" maxlength="14" list="typeList" class="${e.type ? 'filled' : ''}"></label>
-      </div>
-      <div class="comment-wrap">
-        <textarea data-id="${e.id}" data-role="comment" rows="2" placeholder="Damage, mismatch, DOT unreadable, wrong size on sidewall…">${escapeHtml(e.comment || '')}</textarea>
+      <div class="edit-panel">
+        <div class="panel-title">Details</div>
+        <div class="log-fields">
+          <label class="lf"><span>Cont #</span><input type="text" value="${escapeHtml(e.container || '')}" data-id="${e.id}" data-role="container" maxlength="14" class="${e.container ? 'filled' : ''}"></label>
+          <label class="lf"><span>DOT</span><input type="text" value="${escapeHtml(e.dot || '')}" data-id="${e.id}" data-role="dot" maxlength="20" class="${e.dot ? 'filled' : ''}"></label>
+          <label class="lf"><span>Load/Speed</span><input type="text" value="${escapeHtml(e.loadSpeed || '')}" data-id="${e.id}" data-role="loadSpeed" maxlength="16" class="${e.loadSpeed ? 'filled' : ''}"></label>
+          <label class="lf"><span>Ply/LR</span><input type="text" value="${escapeHtml(e.ply || '')}" data-id="${e.id}" data-role="ply" maxlength="10" class="${e.ply ? 'filled' : ''}"></label>
+          <label class="lf"><span>Type</span><input type="text" value="${escapeHtml(e.type || '')}" data-id="${e.id}" data-role="type" maxlength="14" list="typeList" class="${e.type ? 'filled' : ''}"></label>
+          <label class="lf"><span>Size</span><input type="text" value="${escapeHtml(e.size || '')}" data-id="${e.id}" data-role="size" maxlength="24" class="${e.size ? 'filled' : ''}"></label>
+        </div>
+        <div class="comment-wrap">
+          <textarea data-id="${e.id}" data-role="comment" rows="2" placeholder="Damage, mismatch, DOT unreadable, wrong size on sidewall…">${escapeHtml(e.comment || '')}</textarea>
+        </div>
       </div>
     </div>
   `).join('');
@@ -1162,13 +1207,35 @@ logEntries.addEventListener('click', (e)=>{
     // Toggle in place rather than re-rendering — a full redraw would steal focus
     // from whatever else is open and scroll the list out from under a gloved thumb.
     const row = btn.closest('.log-entry');
-    row.classList.toggle('show-comment');
-    if(row.classList.contains('show-comment')){
-      const ta = row.querySelector('textarea[data-role="comment"]');
-      if(ta) ta.focus();
+    row.classList.toggle('show-edit');
+    if(row.classList.contains('show-edit')){
+      const first = row.querySelector('.edit-panel input[data-role="dot"]');
+      if(first) first.focus();
     }
   }
 });
+
+// Build the small line under the tire name. Every value gets a label so nothing is
+// ambiguous, and empty fields are skipped entirely rather than shown as blanks — a tire
+// with no ply rating shouldn't cost a row of screen space saying so.
+function summaryChips(e){
+  const parts = [
+    ['Size', e.size],
+    ['DOT', e.dot],
+    ['Load', e.loadSpeed],
+    ['Ply', e.ply],
+    ['Type', e.type],
+    ['Spec', e.notes],
+  ].filter(([, v]) => v && String(v).trim());
+
+  let html = parts.map(([k, v]) =>
+    `<span class="chip"><i>${k}</i><b>${escapeHtml(v)}</b></span>`).join('');
+
+  // a missing DOT is worth flagging, since it's the one people mean to add and forget
+  if(!e.dot) html += `<span class="chip missing"><i>DOT</i>—</span>`;
+  if(e.comment) html += `<div class="note-line">${escapeHtml(e.comment)}</div>`;
+  return html;
+}
 
 function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => (
@@ -1183,7 +1250,18 @@ logEntries.addEventListener('input', (e)=>{
   if(field){
     const id = parseInt(field.dataset.id,10);
     const entry = sessionLog.find(x=>x.id===id);
-    if(entry) entry[field.dataset.role] = field.value;
+    if(entry){
+      entry[field.dataset.role] = field.value;
+      // keep the summary line in step without a full redraw, which would close the panel
+      const row = field.closest('.log-entry');
+      const sub = row && row.querySelector('.sub');
+      if(sub) sub.innerHTML = summaryChips(entry);
+      const badge = row && row.querySelector('.cont-badge');
+      if(badge){
+        badge.textContent = entry.container || 'no cont #';
+        badge.classList.toggle('empty', !entry.container);
+      }
+    }
     field.classList.toggle('filled', !!field.value.trim());
     clearTimeout(dotSaveTimer);
     dotSaveTimer = setTimeout(saveState, 400);
@@ -1212,10 +1290,12 @@ logEntries.addEventListener('input', (e)=>{
     const id = parseInt(ta.dataset.id,10);
     const entry = sessionLog.find(x=>x.id===id);
     if(entry) entry.comment = ta.value;
-    // keep the amber marker in sync without redrawing the row
+    // keep the amber marker and the summary in sync without redrawing the row
     const row = ta.closest('.log-entry');
     const mark = row && row.querySelector('.note-btn');
     if(mark) mark.classList.toggle('has-note', !!ta.value.trim());
+    const sub = row && row.querySelector('.sub');
+    if(sub && entry) sub.innerHTML = summaryChips(entry);
     clearTimeout(dotSaveTimer);
     dotSaveTimer = setTimeout(saveState, 400);
   }
