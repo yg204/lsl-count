@@ -10,7 +10,7 @@
  * never mid-count.
  */
 
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 const CACHE_NAME = `lsl-count-${CACHE_VERSION}`;
 
 const SHELL = [
@@ -60,17 +60,28 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // nothing off-origin to serve
 
-  // Navigations: try the network briefly so a pushed update lands on the next open,
-  // but fall back to the cached shell the instant the network isn't there.
+  // Navigations: serve the cached shell immediately and refresh it in the background.
+  //
+  // This used to try the network first. That's fine on wifi and miserable on one bar in a
+  // shipping container — every launch sat waiting for a request that would eventually
+  // time out, which read as the app being slow when it was really just waiting. Now the
+  // app opens at cache speed regardless of signal, and any update is picked up quietly
+  // for next launch, which is what the update bar is for anyway.
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html', { ignoreSearch: true }).then((r) => r || caches.match('./')))
+      caches.match('./index.html', { ignoreSearch: true }).then((cached) => {
+        const fresh = fetch(req)
+          .then((res) => {
+            if (res && res.status === 200) {
+              const copy = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy));
+            }
+            return res;
+          })
+          .catch(() => cached || caches.match('./'));
+        // cached copy wins the race when we have one; otherwise wait for the network
+        return cached || fresh;
+      })
     );
     return;
   }

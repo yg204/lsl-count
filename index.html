@@ -640,9 +640,15 @@ function buildEffectiveLibrary(){
     eff.push({ ...item, ...(patch||{}), _base: i, _custom: false, _edited: !!patch });
   });
   libOverrides.additions.forEach(a => {
-    eff.push({ b:a.b, m:a.m, s:a.s, c:a.c, n:a.n, d:'', _base: null, _custom: true, _edited: false, _id: a._id });
+    // carry the spec fields through — without these, a tire added by hand loses its
+    // load rating and ply the moment it comes back out of the library
+    eff.push({ b:a.b, m:a.m, s:a.s, c:a.c, n:a.n, l:a.l||'', p:a.p||'', t:a.t||'',
+               d:'', _base: null, _custom: true, _edited: false, _id: a._id });
   });
-  eff.forEach((it, idx) => it._idx = idx);
+  eff.forEach((it, idx) => {
+    it._idx = idx;
+    itemCache(it);   // pay the cost once, here, instead of on every keystroke
+  });
   EFFECTIVE_LIBRARY = eff;
 }
 
@@ -892,14 +898,19 @@ function scoreToken(item, tok, cache){
   return null;
 }
 
+// These six strings never change until the library does, so they're built once at load
+// and hung off the item. Rebuilding them per keystroke meant ~8,500 string operations
+// for every character typed, which is what made the search feel sticky on a phone.
 function itemCache(item){
+  if(item._c) return item._c;
   const b = item.b.toLowerCase(), m = item.m.toLowerCase(), s = item.s.toLowerCase();
-  return {
+  item._c = {
     b, m, s,
     bs: squash(b), ms: squash(m), ss: squash(s),
     hay: (item.b+' '+item.m+' '+item.s).toLowerCase(),
     hays: squash(item.b+item.m+item.s)
   };
+  return item._c;
 }
 
 // Every token has to land somewhere — but each is matched independently, so
@@ -961,7 +972,9 @@ function runSearch(){
     loose = scored.length > 0;
   }
 
-  const top = scored.slice(0, 40);
+  // Rendering rows is ~85% of the cost of a search, and nobody scrolls past the first
+  // handful — 20 keeps typing smooth on a phone without hiding anything useful.
+  const top = scored.slice(0, 20);
 
   if(top.length === 0){
     resultsEl.innerHTML = `<div class="empty-state"><span class="big">—</span>No matches for "${escapeHtml(q)}".<br>Try the model number or size — or add it to the library below.</div>`;
@@ -970,8 +983,8 @@ function runSearch(){
   }
 
   searchHint.textContent = loose
-    ? 'No exact match — ' + scored.length + ' close' + (scored.length>40 ? ', showing top 40' : '')
-    : scored.length + ' match' + (scored.length===1?'':'es') + (scored.length>40 ? ' — showing top 40' : '');
+    ? 'No exact match — ' + scored.length + ' close' + (scored.length>20 ? ', showing top 20' : '')
+    : scored.length + ' match' + (scored.length===1?'':'es') + (scored.length>20 ? ' — showing top 20' : '');
 
   resultsEl.innerHTML = top.map(([sc,item]) => {
     const title = highlight(item.b + (item.m && item.m !== '-' ? ' ' + item.m : ''), q);
@@ -1891,9 +1904,33 @@ $('cAdd').addEventListener('click', ()=>{
   const brand = $('cBrand').value.trim();
   const size = $('cSize').value.trim();
   if(!brand || !size){ showToast('Brand and size are required'); return; }
-  addToLog({ brand, model: $('cModel').value.trim(), size, cat: 'Manual',
-    notes: $('cNotes').value.trim(), dot: $('cDot').value.trim(),
-    loadSpeed: $('cLoad').value.trim(), ply: $('cPly').value.trim(), type: $('cType').value.trim() });
+  const model = $('cModel').value.trim();
+  const load = $('cLoad').value.trim();
+  const ply = $('cPly').value.trim();
+  const type = $('cType').value.trim();
+  const notes = $('cNotes').value.trim();
+
+  // A tire counted once will be counted again — file it in the library so next time it
+  // turns up in search instead of being retyped. Skipped if it's already there.
+  const key = (x) => (x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const already = EFFECTIVE_LIBRARY.some(i =>
+    key(i.b) === key(brand) && key(i.s) === key(size) &&
+    key(i.m === '-' ? '' : i.m) === key(model));
+
+  if(!already){
+    libOverrides.additions.push({
+      _id: libAddSeq++, b: brand, m: model || '-', s: size,
+      c: 'Manual', n: notes || '-', l: load, p: ply, t: type
+    });
+    saveLibOverrides();
+    buildEffectiveLibrary();
+    libRunSearch();
+  }
+
+  addToLog({ brand, model, size, cat: 'Manual',
+    notes, dot: $('cDot').value.trim(),
+    loadSpeed: load, ply, type });
+  if(!already) showToast('Logged and added to the library');
   modalBackdrop.classList.remove('show');
 });
 
