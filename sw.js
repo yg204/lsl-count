@@ -10,7 +10,7 @@
  * never mid-count.
  */
 
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v16';
 const CACHE_NAME = `lsl-count-${CACHE_VERSION}`;
 
 const SHELL = [
