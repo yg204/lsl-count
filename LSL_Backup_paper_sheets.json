@@ -1,83 +1,108 @@
 {
  "type": "lsl_container_count_backup",
  "version": 1,
- "exportedAt": "2026-08-20T07:07:20.843193",
+ "exportedAt": "2026-08-20T07:45:15.752451",
  "session": {
   "sessionLog": [
    {
     "id": 66,
     "qty": 16,
-    "brand": "LSL",
-    "model": "Forged aluminum wheel",
+    "brand": "GT012-10",
+    "model": "",
     "size": "22.5x9.00",
     "cat": "Wheel / Rim",
-    "notes": "10-26 x 285.75 \u00b7 bore 220",
-    "dot": "GT012-10",
-    "comment": "Offset 152/170 \u00b7 AL \u00b7 Polished both sides",
+    "notes": "",
+    "dot": "",
+    "comment": "",
     "container": "0562",
+    "date": "2026-08-18",
+    "bolt": "10-26 x 285.75",
+    "bore": "220",
+    "offset": "152/170",
+    "finish": "Polished both sides",
+    "type": "AL",
     "loadSpeed": "",
-    "ply": "",
-    "type": "Wheel"
+    "ply": ""
    },
    {
     "id": 65,
     "qty": 56,
-    "brand": "LSL",
-    "model": "Forged aluminum wheel",
+    "brand": "GT020-05",
+    "model": "",
     "size": "24.5x8.25",
     "cat": "Wheel / Rim",
-    "notes": "10-26 x 285.75 \u00b7 bore 220",
-    "dot": "GT020-05",
-    "comment": "Offset 144/167 \u00b7 AL \u00b7 Polished both sides \u00b7 marked back row",
+    "notes": "",
+    "dot": "",
+    "comment": "marked back row",
     "container": "0562",
+    "date": "2026-08-18",
+    "bolt": "10-26 x 285.75",
+    "bore": "220",
+    "offset": "144/167",
+    "finish": "Polished both sides",
+    "type": "AL",
     "loadSpeed": "",
-    "ply": "",
-    "type": "Wheel"
+    "ply": ""
    },
    {
     "id": 64,
     "qty": 18,
-    "brand": "LSL",
-    "model": "Forged aluminum wheel",
+    "brand": "GT020-05",
+    "model": "",
     "size": "22.5x13.00",
     "cat": "Wheel / Rim",
-    "notes": "10-26 x 285.75 \u00b7 bore 220",
-    "dot": "GT020-05",
-    "comment": "Offset -14/14 \u00b7 AL \u00b7 Polished both sides",
+    "notes": "",
+    "dot": "",
+    "comment": "",
     "container": "0562",
+    "date": "2026-08-18",
+    "bolt": "10-26 x 285.75",
+    "bore": "220",
+    "offset": "-14/14",
+    "finish": "Polished both sides",
+    "type": "AL",
     "loadSpeed": "",
-    "ply": "",
-    "type": "Wheel"
+    "ply": ""
    },
    {
     "id": 63,
     "qty": 44,
-    "brand": "LSL",
-    "model": "Forged aluminum wheel",
+    "brand": "GT012-10 LSL",
+    "model": "",
     "size": "22.5x9.00",
     "cat": "Wheel / Rim",
-    "notes": "10-26 x 285.75 \u00b7 bore 220",
-    "dot": "GT012-10 LSL",
-    "comment": "Offset 152/176 \u00b7 AL \u00b7 Polished both sides",
+    "notes": "",
+    "dot": "",
+    "comment": "",
     "container": "0562",
+    "date": "2026-08-18",
+    "bolt": "10-26 x 285.75",
+    "bore": "220",
+    "offset": "152/176",
+    "finish": "Polished both sides",
+    "type": "AL",
     "loadSpeed": "",
-    "ply": "",
-    "type": "Wheel"
+    "ply": ""
    },
    {
     "id": 62,
     "qty": 45,
-    "brand": "LSL",
-    "model": "Forged aluminum wheel",
+    "brand": "GT041-06 LSL",
+    "model": "",
     "size": "24.5x8.25",
     "cat": "Wheel / Rim",
-    "notes": "10-26 x 285.75 \u00b7 bore 220",
-    "dot": "GT041-06 LSL",
-    "comment": "Offset 144/167 \u00b7 AL \u00b7 Polished both sides",
+    "notes": "",
+    "dot": "",
+    "comment": "",
     "container": "0562",
+    "date": "2026-08-18",
+    "bolt": "10-26 x 285.75",
+    "bore": "220",
+    "offset": "144/167",
+    "finish": "Polished both sides",
+    "type": "AL",
     "loadSpeed": "",
-    "ply": "",
-    "type": "Wheel"
+    "ply": ""
    },
    {
     "id": 61,
@@ -90,6 +115,7 @@
     "dot": "0120",
     "comment": "",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "116T",
     "ply": "",
     "type": ""
@@ -105,6 +131,7 @@
     "dot": "3324",
     "comment": "marked XL \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "91H",
     "ply": "",
     "type": ""
@@ -120,6 +147,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "",
     "ply": "10PLY",
     "type": ""
@@ -135,6 +163,7 @@
     "dot": "4620",
     "comment": "",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "110H",
     "ply": "",
     "type": ""
@@ -150,6 +179,7 @@
     "dot": "2224",
     "comment": "marked studdable, XL \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "101H",
     "ply": "",
     "type": "M+S"
@@ -165,6 +195,7 @@
     "dot": "",
     "comment": "Handwriting unclear \u2014 verify \u00b7 spec cell reads 0412091005 \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "",
     "ply": "10PR",
     "type": ""
@@ -180,6 +211,7 @@
     "dot": "1814",
     "comment": "Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "115H",
     "ply": "",
     "type": "M+S"
@@ -195,6 +227,7 @@
     "dot": "1822",
     "comment": "Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "109Q",
     "ply": "10PR",
     "type": "M+S"
@@ -210,6 +243,7 @@
     "dot": "3624",
     "comment": "PL02 again \u2014 still not in the LSL catalog, which lists PL01 only \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "99H",
     "ply": "",
     "type": "M+S"
@@ -225,6 +259,7 @@
     "dot": "",
     "comment": "Handwriting unclear \u2014 verify \u00b7 no DOT; spec column reads 'industrial' \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "",
     "ply": "R2R",
     "type": "Industrial"
@@ -240,6 +275,7 @@
     "dot": "3614",
     "comment": "",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "112H",
     "ply": "",
     "type": "M+S"
@@ -255,6 +291,7 @@
     "dot": "0325",
     "comment": "",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "110H",
     "ply": "",
     "type": "M+S"
@@ -270,6 +307,7 @@
     "dot": "2719",
     "comment": "Handwriting unclear \u2014 verify \u00b7 size middle digits unclear",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "116T",
     "ply": "",
     "type": "A/T"
@@ -285,6 +323,7 @@
     "dot": "3520",
     "comment": "",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "110H",
     "ply": "",
     "type": "M+S"
@@ -300,6 +339,7 @@
     "dot": "",
     "comment": "Handwriting unclear \u2014 verify \u00b7 DOT cell reads 'KJ' \u2014 not a DOT \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "49J",
     "ply": "6PLY",
     "type": "A/T"
@@ -315,6 +355,7 @@
     "dot": "3324",
     "comment": "Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "121/118S",
     "ply": "10PR",
     "type": "M+S"
@@ -330,6 +371,7 @@
     "dot": "2124",
     "comment": "Handwriting unclear \u2014 verify \u00b7 size rim reads R10, almost certainly R16. Marked studless \u00b7 Added to library from this sheet",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "98H",
     "ply": "",
     "type": "M+S"
@@ -345,6 +387,7 @@
     "dot": "2018",
     "comment": "Quantity unclear on the sheet \u2014 verify \u00b7 total glyph could be 9 or A",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "85T",
     "ply": "",
     "type": "M+S"
@@ -360,6 +403,7 @@
     "dot": "2320",
     "comment": "",
     "container": "0313",
+    "date": "2026-08-18",
     "loadSpeed": "88T",
     "ply": "",
     "type": "M+S"
@@ -375,6 +419,7 @@
     "dot": "2420",
     "comment": "Quantity unclear on the sheet \u2014 verify \u00b7 tally only, no Total written \u00b7 Added to library from this sheet",
     "container": "0562",
+    "date": "2026-08-18",
     "loadSpeed": "112S",
     "ply": "",
     "type": "M+S"
@@ -390,6 +435,7 @@
     "dot": "4215",
     "comment": "Quantity unclear on the sheet \u2014 verify \u00b7 tally only, no Total written \u00b7 Added to library from this sheet",
     "container": "0562",
+    "date": "2026-08-18",
     "loadSpeed": "112S",
     "ply": "",
     "type": "M+S"
@@ -405,6 +451,7 @@
     "dot": "2317",
     "comment": "Quantity unclear on the sheet \u2014 verify \u00b7 older LSL form \u2014 tally only, no Total box filled. Second DOT 5114 also written. Marked XL",
     "container": "0562",
+    "date": "2026-08-18",
     "loadSpeed": "110V",
     "ply": "",
     "type": "M+S"
@@ -420,6 +467,7 @@
     "dot": "",
     "comment": "NO TOTAL ON THE SHEET \u2014 quantity left at 0 \u00b7 NO DOT, NO TALLY, NO TOTAL \u2014 row started but never filled",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "107H",
     "ply": "",
     "type": "M+S"
@@ -435,6 +483,7 @@
     "dot": "2425",
     "comment": "marked XL \u00b7 Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "95T",
     "ply": "",
     "type": "M+S"
@@ -450,6 +499,7 @@
     "dot": "4314",
     "comment": "Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "114T",
     "ply": "",
     "type": "M+S"
@@ -465,6 +515,7 @@
     "dot": "4315",
     "comment": "",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "100H",
     "ply": "",
     "type": "M+S"
@@ -480,6 +531,7 @@
     "dot": "2016",
     "comment": "",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "114T",
     "ply": "",
     "type": "M+S"
@@ -495,6 +547,7 @@
     "dot": "1121",
     "comment": "NO TOTAL ON THE SHEET \u2014 quantity left at 0 \u00b7 NO TOTAL AND NO TALLY WRITTEN \u2014 row left blank \u00b7 Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "120Q",
     "ply": "",
     "type": "M+S"
@@ -510,6 +563,7 @@
     "dot": "1517",
     "comment": "",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "107H",
     "ply": "",
     "type": "M+S"
@@ -525,6 +579,7 @@
     "dot": "1319",
     "comment": "Quantity unclear on the sheet \u2014 verify \u00b7 TOTAL HEAVILY REWORKED \u2014 37 written, struck through, with -9 and -10 alongside. Could be 37, 28 or 18. VERIFY",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "114T",
     "ply": "",
     "type": "M+S"
@@ -540,6 +595,7 @@
     "dot": "3319",
     "comment": "",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "115H",
     "ply": "",
     "type": "M+S"
@@ -555,6 +611,7 @@
     "dot": "1621",
     "comment": "Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "125/122R",
     "ply": "10PR",
     "type": "A/T"
@@ -570,6 +627,7 @@
     "dot": "2319",
     "comment": "marked XL",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "104W",
     "ply": "",
     "type": "M+S"
@@ -585,6 +643,7 @@
     "dot": "3919",
     "comment": "",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "91T",
     "ply": "",
     "type": "M+S"
@@ -600,6 +659,7 @@
     "dot": "1919",
     "comment": "marked XL \u00b7 Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "90W",
     "ply": "",
     "type": ""
@@ -615,6 +675,7 @@
     "dot": "1721",
     "comment": "Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "121/118S",
     "ply": "8PR",
     "type": "M+S"
@@ -630,6 +691,7 @@
     "dot": "0319",
     "comment": "type struck through on the sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "110H",
     "ply": "",
     "type": "M+S"
@@ -645,6 +707,7 @@
     "dot": "2319",
     "comment": "marked XL",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "104W",
     "ply": "",
     "type": "M+S"
@@ -660,6 +723,7 @@
     "dot": "1719",
     "comment": "marked XL \u00b7 Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "87W",
     "ply": "",
     "type": "M+S"
@@ -675,6 +739,7 @@
     "dot": "4115",
     "comment": "Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "75S",
     "ply": "",
     "type": "M+S"
@@ -690,6 +755,7 @@
     "dot": "4215",
     "comment": "Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "75S",
     "ply": "",
     "type": "M+S"
@@ -705,6 +771,7 @@
     "dot": "3815",
     "comment": "Added to library from this sheet",
     "container": "1536 (lower level)",
+    "date": "2026-08-17",
     "loadSpeed": "84Q",
     "ply": "",
     "type": "M+S"
@@ -720,6 +787,7 @@
     "dot": "1094",
     "comment": "Handwriting unclear \u2014 verify \u00b7 DOT written with a question mark \u00b7 Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "70J",
     "ply": "6",
     "type": ""
@@ -735,6 +803,7 @@
     "dot": "1824",
     "comment": "Handwriting unclear \u2014 verify \u00b7 load/speed cell reads 'C/1304hr' \u2014 unclear \u00b7 Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "",
     "ply": "6PR",
     "type": ""
@@ -750,6 +819,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "70J",
     "ply": "8",
     "type": "A/T"
@@ -765,6 +835,7 @@
     "dot": "",
     "comment": "a loose tally is written below the table with no row \u00b7 Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "73K",
     "ply": "6",
     "type": "A/T"
@@ -780,6 +851,7 @@
     "dot": "0121",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "73J",
     "ply": "6",
     "type": "A/T"
@@ -795,6 +867,7 @@
     "dot": "",
     "comment": "Handwriting unclear \u2014 verify \u00b7 size unclear \u2014 first number could be 24 or 2A \u00b7 Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "70J",
     "ply": "8",
     "type": "A/T"
@@ -810,6 +883,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "49S",
     "ply": "6PLY",
     "type": "A/T"
@@ -825,6 +899,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "69J",
     "ply": "6PLY",
     "type": "M/T"
@@ -840,6 +915,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "52J",
     "ply": "6PLY",
     "type": "A/T"
@@ -855,6 +931,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "85J",
     "ply": "6PLY",
     "type": "M/T"
@@ -870,6 +947,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "65F",
     "ply": "6PLY",
     "type": "A/T"
@@ -885,6 +963,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "80J",
     "ply": "6PLY",
     "type": "A/T"
@@ -900,6 +979,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "84J",
     "ply": "6PLY",
     "type": "A/T"
@@ -915,6 +995,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "93J",
     "ply": "6PLY",
     "type": "A/T"
@@ -930,6 +1011,7 @@
     "dot": "0121",
     "comment": "model overwritten, reads SL306 then SL318 \u00b7 Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "73J",
     "ply": "6PLY",
     "type": "A/T"
@@ -945,6 +1027,7 @@
     "dot": "0121",
     "comment": "Handwriting unclear \u2014 verify \u00b7 a word before the DOT is illegible, possibly 'worn' \u00b7 Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "79K",
     "ply": "6PLY",
     "type": "A/T"
@@ -960,6 +1043,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "77J",
     "ply": "6PLY",
     "type": "A/T"
@@ -975,6 +1059,7 @@
     "dot": "0121",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "52J",
     "ply": "6PLY",
     "type": "A/T"
@@ -990,6 +1075,7 @@
     "dot": "",
     "comment": "Added to library from this sheet",
     "container": "5311 (2nd level)",
+    "date": "2026-08-17",
     "loadSpeed": "85J",
     "ply": "6PLY",
     "type": "A/T"
